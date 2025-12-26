@@ -1,0 +1,96 @@
+# Claude Extension Toolkit
+
+A meta-development toolkit for creating Claude Code extensions. This plugin provides skills for building and optimizing skills, agents, commands, plugins, and rules.
+
+## Installation
+
+```bash
+# From local directory
+claude plugin install ~/.claude/plugins/claude-extension-toolkit
+
+# Or add to your settings
+claude config add plugins ~/.claude/plugins/claude-extension-toolkit
+```
+
+## Skills Included
+
+### `/claude-dev` - Extension Type Decision Helper
+
+Entry point for Claude Code customization. Helps you decide which extension type to use:
+
+- **Commands** - Simple slash-invoked actions
+- **Skills** - Domain expertise and complex guidance
+- **Agents** - Autonomous multi-step tasks
+- **Rules** - CLAUDE.md, settings, and hooks
+- **Plugins** - Bundled, distributable packages
+
+### `/create-command` - Command Builder
+
+Create slash commands with:
+- Frontmatter configuration (description, arguments, allowed tools)
+- File references and argument patterns
+- Git workflow integration examples
+
+### `/create-skill` - Skill Builder
+
+Create skills with:
+- SKILL.md structure and frontmatter
+- Progressive disclosure via references/
+- Template patterns for different skill types
+
+### `/create-agent` - Agent Builder
+
+Create autonomous agents with:
+- Agent frontmatter (tools, model, color)
+- Triggering description patterns
+- Tool restriction strategies
+- Model selection guidance
+
+### `/create-plugin` - Plugin Builder
+
+Create distributable plugins with:
+- plugin.json manifest structure
+- Component organization (commands, skills, agents, hooks)
+- MCP server integration
+- Marketplace publishing workflow
+
+### `/create-rules` - Rules Builder
+
+Create configuration with:
+- CLAUDE.md structure (global, project, nested)
+- Settings files (settings.json, settings.local.json)
+- Hooks configuration (PreToolUse, PostToolUse, Stop, etc.)
+
+### `/extension-audit` - Extension Analyzer
+
+Analyze and optimize existing extensions:
+- Token efficiency analysis
+- Currency verification (outdated APIs/docs)
+- Structure improvements
+- Type-specific optimization strategies
+
+## Usage Examples
+
+```
+# Decide what type of extension to build
+/claude-dev
+
+# Create a new command
+/create-command
+
+# Create a skill for a specific domain
+/create-skill
+
+# Create an autonomous agent
+/create-agent
+
+# Bundle extensions into a plugin
+/create-plugin
+
+# Audit and optimize existing extensions
+/extension-audit
+```
+
+## License
+
+MIT
