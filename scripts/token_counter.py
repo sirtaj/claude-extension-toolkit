@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 CLAUDE_DIR = Path.home() / ".claude"
-AI_DIR = Path.home() / "sirtaj-notes" / "3-Resources" / "AI"
 
 # Token estimation: ~4 chars per token (conservative estimate for English text)
 CHARS_PER_TOKEN = 4
@@ -309,8 +308,6 @@ def main():
 
     if args.all:
         results = find_and_count_all(CLAUDE_DIR, args.type)
-        if AI_DIR.exists():
-            results.extend(find_and_count_all(AI_DIR, args.type))
     elif args.path:
         path = Path(args.path)
         if not path.exists():

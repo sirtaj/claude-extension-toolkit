@@ -23,7 +23,6 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 CLAUDE_DIR = Path.home() / ".claude"
-AI_DIR = Path.home() / "sirtaj-notes" / "3-Resources" / "AI"
 
 EXTENSION_TYPES = {
     "skills": {
@@ -387,9 +386,6 @@ def main():
 
     if args.all:
         results = validate_all(CLAUDE_DIR, args.type)
-        # Also check AI directory if it exists
-        if AI_DIR.exists():
-            results.extend(validate_all(AI_DIR, args.type))
     elif args.path:
         path = Path(args.path)
         if not path.exists():

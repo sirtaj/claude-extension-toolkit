@@ -30,7 +30,6 @@ from typing import List, Optional, Set, Tuple
 from urllib.parse import urlparse
 
 CLAUDE_DIR = Path.home() / ".claude"
-AI_DIR = Path.home() / "sirtaj-notes" / "3-Resources" / "AI"
 
 # Patterns for finding references
 MARKDOWN_LINK_PATTERN = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
@@ -298,8 +297,6 @@ def main():
 
     if args.all:
         results = find_and_lint_all(CLAUDE_DIR)
-        if AI_DIR.exists():
-            results.extend(find_and_lint_all(AI_DIR))
     elif args.path:
         path = Path(args.path)
         if not path.exists():

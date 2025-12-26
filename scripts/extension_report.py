@@ -28,7 +28,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 CLAUDE_DIR = Path.home() / ".claude"
-AI_DIR = Path.home() / "sirtaj-notes" / "3-Resources" / "AI"
 
 CHARS_PER_TOKEN = 4
 
@@ -343,14 +342,6 @@ def generate_report() -> Report:
     report.plugins.extend(scan_plugins(CLAUDE_DIR, "claude"))
     report.hooks.extend(scan_hooks(CLAUDE_DIR, "claude"))
     report.claude_md.extend(scan_claude_md(CLAUDE_DIR, "claude"))
-
-    # Scan AI directory if exists
-    if AI_DIR.exists():
-        report.skills.extend(scan_skills(AI_DIR, "ai"))
-        report.agents.extend(scan_agents(AI_DIR, "ai"))
-        report.commands.extend(scan_commands(AI_DIR, "ai"))
-        report.plugins.extend(scan_plugins(AI_DIR, "ai"))
-        report.claude_md.extend(scan_claude_md(AI_DIR, "ai"))
 
     return report
 
