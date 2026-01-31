@@ -1,6 +1,6 @@
 # Schema Definitions
 
-Auto-generated from version manifest. Last updated: 2026-01-31T00:00:00Z
+Auto-generated from version manifest. Last updated: 2026-01-31T10:22:02.853721Z
 
 ## Skill Frontmatter
 
@@ -47,6 +47,7 @@ Auto-generated from version manifest. Last updated: 2026-01-31T00:00:00Z
 | Stop | See docs | Yes | No |
 | PreCompact | See docs | No | No |
 | SessionEnd | See docs | No | No |
+
 
 ## Plugin Manifest (plugin.json)
 

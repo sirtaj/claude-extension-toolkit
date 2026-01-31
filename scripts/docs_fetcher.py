@@ -20,7 +20,7 @@ import json
 import sys
 import urllib.request
 import urllib.error
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -96,7 +96,7 @@ def cache_content(source_id: str, content: str):
     # Also save metadata
     meta_file = CACHE_DIR / f"{source_id}.meta.json"
     meta_file.write_text(json.dumps({
-        "fetched_at": datetime.utcnow().isoformat() + "Z",
+        "fetched_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "size": len(content)
     }))
 
@@ -216,7 +216,7 @@ Auto-generated from version manifest. Last updated: {timestamp}
         events_table += f"| {event} | See docs | {can_block} | {has_matcher} |\n"
 
     content = content.format(
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         events_table=events_table
     )
 
@@ -258,7 +258,7 @@ def main():
     elif args.command == "sync":
         print("Syncing documentation sources...")
         if sync_docs(sources):
-            manifest["last_docs_sync"] = datetime.utcnow().isoformat() + "Z"
+            manifest["last_docs_sync"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             save_manifest(manifest)
             print("\nSync complete. Updating schema definitions...")
             update_schema_definitions()

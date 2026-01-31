@@ -1,10 +1,13 @@
 {
   "manifest_version": "1.0",
   "claude_code_version": "2.1.27",
-  "last_docs_sync": null,
+  "last_docs_sync": "2026-01-31T10:22:02.853366Z",
   "schemas": {
     "skill_frontmatter": {
-      "required": ["name", "description"],
+      "required": [
+        "name",
+        "description"
+      ],
       "optional": [
         "allowed-tools",
         "model",
@@ -17,7 +20,10 @@
       ]
     },
     "agent_frontmatter": {
-      "required": ["name", "description"],
+      "required": [
+        "name",
+        "description"
+      ],
       "optional": [
         "tools",
         "disallowedTools",
@@ -38,8 +44,17 @@
       ]
     },
     "plugin_manifest": {
-      "required": ["name", "description"],
-      "optional": ["version", "author", "keywords", "repository", "license"]
+      "required": [
+        "name",
+        "description"
+      ],
+      "optional": [
+        "version",
+        "author",
+        "keywords",
+        "repository",
+        "license"
+      ]
     },
     "hooks": {
       "events": [
@@ -57,8 +72,19 @@
         "SessionEnd"
       ],
       "output_format": "hookSpecificOutput",
-      "valid_models": ["sonnet", "opus", "haiku"],
-      "valid_colors": ["blue", "cyan", "green", "yellow", "magenta", "red"]
+      "valid_models": [
+        "sonnet",
+        "opus",
+        "haiku"
+      ],
+      "valid_colors": [
+        "blue",
+        "cyan",
+        "green",
+        "yellow",
+        "magenta",
+        "red"
+      ]
     }
   },
   "deprecations": [
