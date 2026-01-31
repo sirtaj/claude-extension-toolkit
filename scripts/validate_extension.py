@@ -6,6 +6,7 @@ Usage:
     python validate_extension.py <path>           # Validate single file/directory
     python validate_extension.py --all            # Validate all extensions
     python validate_extension.py --type skills    # Validate specific type
+    python validate_extension.py --schema         # Validate against version manifest
 
 Exit codes:
     0 - All validations passed
@@ -20,30 +21,70 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
+SCRIPT_DIR = Path(__file__).parent
+TOOLKIT_ROOT = SCRIPT_DIR.parent
 CLAUDE_DIR = Path.home() / ".claude"
+MANIFEST_PATH = TOOLKIT_ROOT / "data" / "version-manifest.json"
+
+
+def load_schemas() -> Dict:
+    """Load schema definitions from version manifest."""
+    if MANIFEST_PATH.exists():
+        with open(MANIFEST_PATH) as f:
+            manifest = json.load(f)
+            return manifest.get("schemas", {})
+    return {}
+
+
+# Load schemas from manifest if available, otherwise use defaults
+_SCHEMAS = load_schemas()
 
 EXTENSION_TYPES = {
     "skills": {
         "pattern": "**/SKILL.md",
-        "required_frontmatter": ["name", "description"],
-        "optional_frontmatter": ["tools", "model"],
+        "required_frontmatter": _SCHEMAS.get("skill_frontmatter", {}).get(
+            "required", ["name", "description"]
+        ),
+        "optional_frontmatter": _SCHEMAS.get("skill_frontmatter", {}).get(
+            "optional", ["allowed-tools", "model", "context", "agent", "hooks",
+                        "argument-hint", "disable-model-invocation", "user-invocable"]
+        ),
     },
     "agents": {
         "pattern": "*.md",
-        "required_frontmatter": ["name", "description"],
-        "optional_frontmatter": ["tools", "model", "color"],
+        "required_frontmatter": _SCHEMAS.get("agent_frontmatter", {}).get(
+            "required", ["name", "description"]
+        ),
+        "optional_frontmatter": _SCHEMAS.get("agent_frontmatter", {}).get(
+            "optional", ["tools", "disallowedTools", "model", "color", "hooks",
+                        "permissionMode", "skills"]
+        ),
     },
     "commands": {
         "pattern": "*.md",
-        "required_frontmatter": [],
-        "optional_frontmatter": ["description", "allowed-tools", "model"],
+        "required_frontmatter": _SCHEMAS.get("command_frontmatter", {}).get(
+            "required", []
+        ),
+        "optional_frontmatter": _SCHEMAS.get("command_frontmatter", {}).get(
+            "optional", ["description", "allowed-tools", "model", "argument-hint"]
+        ),
     },
 }
 
-VALID_AGENT_COLORS = ["blue", "cyan", "green", "yellow", "magenta", "red"]
-VALID_MODELS = ["sonnet", "opus", "haiku"]
+VALID_AGENT_COLORS = _SCHEMAS.get("hooks", {}).get(
+    "valid_colors", ["blue", "cyan", "green", "yellow", "magenta", "red"]
+)
+VALID_MODELS = _SCHEMAS.get("hooks", {}).get(
+    "valid_models", ["sonnet", "opus", "haiku"]
+)
+VALID_HOOK_EVENTS = _SCHEMAS.get("hooks", {}).get(
+    "events", ["PreToolUse", "PostToolUse", "Stop", "UserPromptSubmit",
+              "SessionStart", "SessionEnd", "PermissionRequest",
+              "PostToolUseFailure", "Notification", "SubagentStart",
+              "SubagentStop", "PreCompact"]
+)
 
 
 @dataclass
@@ -271,13 +312,8 @@ def validate_hooks_json(path: Path) -> ValidationResult:
         result.errors.append(f"Invalid JSON: {e}")
         return result
 
-    valid_events = [
-        "PreToolUse", "PostToolUse", "Stop",
-        "UserPromptSubmit", "SessionStart", "SessionEnd"
-    ]
-
     for event, handlers in hooks.items():
-        if event not in valid_events:
+        if event not in VALID_HOOK_EVENTS:
             result.warnings.append(f"Unknown hook event: '{event}'")
 
         if not isinstance(handlers, list):

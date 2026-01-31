@@ -1,108 +1,159 @@
 # Claude Extension Toolkit
 
-A meta-development toolkit for creating Claude Code extensions. This plugin provides skills for building and optimizing skills, agents, commands, plugins, and rules.
-
-This is very much an experiment.
+A self-maintaining toolkit for creating Claude Code extensions. Provides workflow-based skills for building, configuring, and maintaining skills, agents, commands, plugins, and hooks.
 
 ## Installation
 
 ```bash
-# From local directory
-claude plugin install ~/.claude/plugins/claude-extension-toolkit
+# From local marketplace
+/plugin install claude-extension-toolkit@sirtaj-plugins
 
-# Or add to your settings
-claude config add plugins ~/.claude/plugins/claude-extension-toolkit
+# Or for development
+claude --plugin-dir ./claude-extension-toolkit
 ```
 
-## Skills Included
+## Skills
 
-### `/claude-dev` - Extension Type Decision Helper
+### `/extension-starter` - Entry Point
 
-Entry point for Claude Code customization. Helps you decide which extension type to use:
+Guides extension type decisions and provides quick-start templates.
 
-- **Commands** - Simple slash-invoked actions
-- **Skills** - Domain expertise and complex guidance
-- **Agents** - Autonomous multi-step tasks
-- **Rules** - CLAUDE.md, settings, and hooks
-- **Plugins** - Bundled, distributable packages
+**Use when:** Starting customization, deciding what to build, need a quick template.
 
-### `/create-command` - Command Builder
+```
+What do you need?
+├─ Quick reusable prompt?     → COMMAND
+├─ Domain expertise?          → SKILL
+├─ Autonomous work?           → AGENT
+├─ Always-on behavior?        → HOOKS
+├─ Project context?           → CLAUDE.md
+└─ Shareable package?         → PLUGIN
+```
 
-Create slash commands with:
+### `/extension-builder` - Create Extensions
 
-- Frontmatter configuration (description, arguments, allowed tools)
-- File references and argument patterns
-- Git workflow integration examples
+Detailed guidance for creating any extension type with proper structure and frontmatter.
 
-### `/create-skill` - Skill Builder
+**Use when:** Building skills, agents, commands, or plugins.
 
-Create skills with:
+- Extension spectrum (commands → skills → agents → plugins)
+- Frontmatter reference and templates
+- Progressive disclosure patterns
+- Plugin lifecycle and marketplace integration
 
-- SKILL.md structure and frontmatter
-- Progressive disclosure via references/
-- Template patterns for different skill types
+### `/extension-rules` - Configure Behavior
 
-### `/create-agent` - Agent Builder
+Configure Claude Code via CLAUDE.md, hooks, and settings.
 
-Create autonomous agents with:
+**Use when:** Adding project rules, creating hooks, configuring permissions.
 
-- Agent frontmatter (tools, model, color)
-- Triggering description patterns
-- Tool restriction strategies
-- Model selection guidance
+- CLAUDE.md patterns and best practices
+- Hook setup and common patterns
+- Settings and permissions configuration
 
-### `/create-plugin` - Plugin Builder
+### `/extension-optimizer` - Maintain Extensions
 
-Create distributable plugins with:
+Validate, audit, and upgrade existing extensions.
 
-- plugin.json manifest structure
-- Component organization (commands, skills, agents, hooks)
-- MCP server integration
-- Marketplace publishing workflow
+**Use when:** Auditing extensions, checking for deprecated patterns, optimizing tokens.
 
-### `/create-rules` - Rules Builder
-
-Create configuration with:
-
-- CLAUDE.md structure (global, project, nested)
-- Settings files (settings.json, settings.local.json)
-- Hooks configuration (PreToolUse, PostToolUse, Stop, etc.)
-
-### `/extension-audit` - Extension Analyzer
-
-Analyze and optimize existing extensions:
-
+- Quick validation with toolkit scripts
+- Deprecated pattern detection
 - Token efficiency analysis
-- Currency verification (outdated APIs/docs)
-- Structure improvements
-- Type-specific optimization strategies
+- Upgrade workflow with before/after examples
 
-## Usage Examples
+### `/extension-sync` - Stay Current
+
+Sync with Claude Code documentation and update schema definitions.
+
+**Use when:** Checking for updates, syncing docs, after Claude Code updates.
+
+- Canonical documentation fetching
+- Version manifest management
+- Schema definition updates
+
+## Shared References
+
+The toolkit includes shared reference files used by all skills:
+
+| Reference | Purpose |
+|-----------|---------|
+| `frontmatter.md` | All frontmatter fields for skills, agents, commands, plugins |
+| `templates.md` | Ready-to-use templates for all extension types |
+| `locations.md` | Storage locations and priority order |
+| `tools.md` | Tool restrictions and permission patterns |
+| `hooks.md` | Complete hooks reference with JSON input schemas |
+| `schema-definitions.md` | Current schemas (auto-updated by sync) |
+
+## Scripts
+
+Utility scripts for extension management:
+
+```bash
+cd ~/.claude/plugins/claude-extension-toolkit
+
+# Validate extension structure
+python scripts/validate_extension.py <path>
+python scripts/validate_extension.py --all
+
+# Detect deprecated patterns
+python scripts/pattern_detector.py <path>
+
+# Count tokens
+python scripts/token_counter.py <path> --verbose
+
+# Manage marketplace
+python scripts/marketplace_manager.py list <marketplace-path>
+
+# Scaffold new plugin
+python scripts/plugin_scaffolder.py my-plugin --output ./
+
+# Sync documentation
+python scripts/docs_fetcher.py sync
+```
+
+## Architecture
 
 ```
-# Decide what type of extension to build
-/claude-dev
-
-# Create a new command
-/create-command
-
-# Create a skill for a specific domain
-/create-skill
-
-# Create an autonomous agent
-/create-agent
-
-# Bundle extensions into a plugin
-/create-plugin
-
-# Audit and optimize existing extensions
-/extension-audit
+claude-extension-toolkit/
+├── .claude-plugin/plugin.json      # Plugin manifest
+├── skills/
+│   ├── extension-starter/          # Decision & quick-start
+│   ├── extension-builder/          # Create extensions
+│   ├── extension-rules/            # Configure behavior
+│   ├── extension-optimizer/        # Maintain & upgrade
+│   └── extension-sync/             # Docs & version tracking
+├── references/                     # Shared by all skills
+│   ├── frontmatter.md
+│   ├── templates.md
+│   ├── locations.md
+│   ├── tools.md
+│   ├── hooks.md
+│   └── schema-definitions.md
+├── data/
+│   ├── version-manifest.json       # Schema versions, deprecations
+│   └── canonical-sources.json      # Documentation URLs
+└── scripts/
+    ├── validate_extension.py
+    ├── pattern_detector.py
+    ├── token_counter.py
+    ├── docs_fetcher.py
+    ├── marketplace_manager.py
+    └── plugin_scaffolder.py
 ```
+
+## Self-Maintenance
+
+The toolkit maintains itself by:
+
+1. **Schema tracking** - Version manifest tracks current Claude Code schemas
+2. **Pattern detection** - Detects deprecated patterns in extensions
+3. **Doc syncing** - Fetches canonical documentation on demand
+4. **Upgrade guidance** - Provides before/after migration examples
 
 ## Credits
 
-Generated by Sirtaj Singh Kang using Claude Code, as an exercise in
-self-referential AI usage. It's turtles named Claude all the way down.
+Created by Sirtaj Singh Kang using Claude Code.
 
 ## License
 

@@ -1,0 +1,65 @@
+{
+  "sources": [
+    {
+      "id": "skills",
+      "url": "https://code.claude.com/docs/en/skills",
+      "purpose": "Skill frontmatter schema, features, invocation",
+      "extract": ["frontmatter_fields", "trigger_patterns", "features"]
+    },
+    {
+      "id": "best_practices",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices",
+      "purpose": "Description format, progressive disclosure, anti-patterns",
+      "extract": ["description_guidelines", "structure_patterns", "anti_patterns"]
+    },
+    {
+      "id": "subagents",
+      "url": "https://code.claude.com/docs/en/sub-agents",
+      "purpose": "Agent frontmatter, tools, permissions",
+      "extract": ["agent_frontmatter", "tool_restrictions", "permission_modes"]
+    },
+    {
+      "id": "hooks",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "purpose": "Events, input schemas, exit codes",
+      "extract": ["hook_events", "input_schemas", "output_formats", "exit_codes"]
+    },
+    {
+      "id": "plugins",
+      "url": "https://code.claude.com/docs/en/plugins",
+      "purpose": "Plugin structure, lifecycle, testing",
+      "extract": ["plugin_structure", "lifecycle", "testing_workflow"]
+    },
+    {
+      "id": "plugins_reference",
+      "url": "https://code.claude.com/docs/en/plugins-reference",
+      "purpose": "Complete technical specs",
+      "extract": ["manifest_schema", "directory_structure", "api_reference"]
+    },
+    {
+      "id": "docs_index",
+      "url": "https://code.claude.com/docs/llms.txt",
+      "purpose": "Index of all available pages",
+      "extract": ["page_urls", "page_titles"]
+    }
+  ],
+  "community_sources": [
+    {
+      "id": "skill_activation",
+      "url": "https://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably",
+      "purpose": "Workarounds for auto-invocation issues",
+      "reliability": "community"
+    },
+    {
+      "id": "plugins_registry",
+      "url": "https://claude-plugins.dev",
+      "purpose": "Community plugins and patterns",
+      "reliability": "community"
+    }
+  ],
+  "sync_config": {
+    "max_age_days": 7,
+    "timeout_seconds": 30,
+    "retry_count": 3
+  }
+}

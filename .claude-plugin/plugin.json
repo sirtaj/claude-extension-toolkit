@@ -1,10 +1,10 @@
 {
   "name": "claude-extension-toolkit",
-  "description": "Meta-development toolkit for creating Claude Code extensions (skills, agents, commands, plugins, rules)",
-  "version": "1.0.0",
+  "description": "Self-maintaining toolkit for creating Claude Code extensions. Provides workflow-based skills for building, configuring, and maintaining skills, agents, commands, plugins, and hooks.",
+  "version": "2.0.0",
   "author": {
     "name": "Sirtaj Singh Kang",
     "email": "sirtaj@sirtaj.net"
   },
-  "keywords": ["development", "meta", "extensions", "skills", "agents", "commands", "plugins"]
+  "keywords": ["development", "meta", "extensions", "skills", "agents", "commands", "plugins", "hooks", "maintenance"]
 }

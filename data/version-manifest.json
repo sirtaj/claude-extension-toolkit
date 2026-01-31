@@ -1,0 +1,105 @@
+{
+  "manifest_version": "1.0",
+  "claude_code_version": "2.1.27",
+  "last_docs_sync": null,
+  "schemas": {
+    "skill_frontmatter": {
+      "required": ["name", "description"],
+      "optional": [
+        "allowed-tools",
+        "model",
+        "context",
+        "agent",
+        "hooks",
+        "argument-hint",
+        "disable-model-invocation",
+        "user-invocable"
+      ]
+    },
+    "agent_frontmatter": {
+      "required": ["name", "description"],
+      "optional": [
+        "tools",
+        "disallowedTools",
+        "model",
+        "color",
+        "hooks",
+        "permissionMode",
+        "skills"
+      ]
+    },
+    "command_frontmatter": {
+      "required": [],
+      "optional": [
+        "description",
+        "allowed-tools",
+        "model",
+        "argument-hint"
+      ]
+    },
+    "plugin_manifest": {
+      "required": ["name", "description"],
+      "optional": ["version", "author", "keywords", "repository", "license"]
+    },
+    "hooks": {
+      "events": [
+        "SessionStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PermissionRequest",
+        "PostToolUse",
+        "PostToolUseFailure",
+        "Notification",
+        "SubagentStart",
+        "SubagentStop",
+        "Stop",
+        "PreCompact",
+        "SessionEnd"
+      ],
+      "output_format": "hookSpecificOutput",
+      "valid_models": ["sonnet", "opus", "haiku"],
+      "valid_colors": ["blue", "cyan", "green", "yellow", "magenta", "red"]
+    }
+  },
+  "deprecations": [
+    {
+      "pattern": "$TOOL_INPUT",
+      "replacement": "stdin JSON parsed with jq",
+      "since": "2.0.0",
+      "severity": "warning"
+    },
+    {
+      "pattern": "$TOOL_OUTPUT",
+      "replacement": "stdin JSON parsed with jq",
+      "since": "2.0.0",
+      "severity": "warning"
+    },
+    {
+      "pattern": "$TOOL_NAME",
+      "replacement": "stdin JSON parsed with jq",
+      "since": "2.0.0",
+      "severity": "warning"
+    },
+    {
+      "pattern": "decision.*block",
+      "replacement": "permissionDecision: deny",
+      "since": "2.1.0",
+      "severity": "error"
+    },
+    {
+      "pattern": "docs.anthropic.com",
+      "replacement": "code.claude.com",
+      "since": "2.1.0",
+      "severity": "warning"
+    }
+  ],
+  "canonical_urls": {
+    "skills": "https://code.claude.com/docs/en/skills",
+    "best_practices": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices",
+    "subagents": "https://code.claude.com/docs/en/sub-agents",
+    "hooks": "https://code.claude.com/docs/en/hooks",
+    "plugins": "https://code.claude.com/docs/en/plugins",
+    "plugins_reference": "https://code.claude.com/docs/en/plugins-reference",
+    "docs_index": "https://code.claude.com/docs/llms.txt"
+  }
+}
