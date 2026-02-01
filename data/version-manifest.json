@@ -1,14 +1,16 @@
 {
-  "manifest_version": "1.0",
+  "manifest_version": "1.1",
   "claude_code_version": "2.1.27",
-  "last_docs_sync": "2026-01-31T10:22:02.853366Z",
+  "last_docs_sync": "2026-02-01T00:00:00Z",
   "schemas": {
     "skill_frontmatter": {
-      "required": [
-        "name",
+      "required": [],
+      "recommended": [
         "description"
       ],
       "optional": [
+        "name",
+        "description",
         "allowed-tools",
         "model",
         "context",
@@ -45,32 +47,114 @@
     },
     "plugin_manifest": {
       "required": [
-        "name",
-        "description"
+        "name"
       ],
       "optional": [
+        "description",
         "version",
         "author",
         "keywords",
         "repository",
-        "license"
+        "license",
+        "homepage",
+        "commands",
+        "agents",
+        "skills",
+        "hooks",
+        "mcpServers",
+        "outputStyles",
+        "lspServers"
       ]
     },
     "hooks": {
-      "events": [
-        "SessionStart",
-        "UserPromptSubmit",
-        "PreToolUse",
-        "PermissionRequest",
-        "PostToolUse",
-        "PostToolUseFailure",
-        "Notification",
-        "SubagentStart",
-        "SubagentStop",
-        "Stop",
-        "PreCompact",
-        "SessionEnd"
-      ],
+      "events": {
+        "SessionStart": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": ["startup", "resume", "clear", "compact"]
+        },
+        "UserPromptSubmit": {
+          "can_block": true,
+          "has_matcher": false
+        },
+        "PreToolUse": {
+          "can_block": true,
+          "has_matcher": true,
+          "matcher_values": "tool_name"
+        },
+        "PermissionRequest": {
+          "can_block": true,
+          "has_matcher": true,
+          "matcher_values": "tool_name"
+        },
+        "PostToolUse": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": "tool_name"
+        },
+        "PostToolUseFailure": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": "tool_name"
+        },
+        "Notification": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": ["permission_prompt", "idle_prompt", "auth_success", "elicitation_dialog"]
+        },
+        "SubagentStart": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": "agent_type"
+        },
+        "SubagentStop": {
+          "can_block": true,
+          "has_matcher": true,
+          "matcher_values": "agent_type"
+        },
+        "Stop": {
+          "can_block": true,
+          "has_matcher": false
+        },
+        "PreCompact": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": ["manual", "auto"]
+        },
+        "SessionEnd": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": ["clear", "logout", "prompt_input_exit"]
+        }
+      },
+      "handler_fields": {
+        "type": {
+          "values": ["command", "prompt", "agent"],
+          "required": false,
+          "default": "command"
+        },
+        "command": {
+          "required_for": "command"
+        },
+        "prompt": {
+          "required_for": ["prompt", "agent"]
+        },
+        "timeout": {
+          "type": "number"
+        },
+        "statusMessage": {
+          "type": "string"
+        },
+        "once": {
+          "type": "boolean"
+        },
+        "async": {
+          "type": "boolean"
+        },
+        "model": {
+          "values": ["sonnet", "opus", "haiku"]
+        }
+      },
       "output_format": "hookSpecificOutput",
       "valid_models": [
         "sonnet",
@@ -84,7 +168,11 @@
         "yellow",
         "magenta",
         "red"
-      ]
+      ],
+      "plugin_format": {
+        "requires_hooks_wrapper": true,
+        "optional_description": true
+      }
     }
   },
   "deprecations": [
@@ -107,6 +195,12 @@
       "severity": "warning"
     },
     {
+      "pattern": "hook_type",
+      "replacement": "hook_event_name",
+      "since": "2.1.0",
+      "severity": "warning"
+    },
+    {
       "pattern": "decision.*block",
       "replacement": "permissionDecision: deny",
       "since": "2.1.0",
@@ -126,6 +220,7 @@
     "hooks": "https://code.claude.com/docs/en/hooks",
     "plugins": "https://code.claude.com/docs/en/plugins",
     "plugins_reference": "https://code.claude.com/docs/en/plugins-reference",
+    "settings": "https://code.claude.com/docs/en/settings",
     "docs_index": "https://code.claude.com/docs/llms.txt"
   }
 }

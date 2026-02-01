@@ -214,6 +214,40 @@ my-plugin/
 }
 ```
 
+**hooks/hooks.json:**
+```json
+{
+  "description": "Plugin hooks description",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check_script.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/init.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Note:** Plugin hooks.json requires a `hooks` wrapper object. The `description` field is optional but recommended.
+
 ## CLAUDE.md Templates
 
 ### Project Rules

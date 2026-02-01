@@ -16,8 +16,6 @@ Exit codes:
 
 import argparse
 import json
-import os
-import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -45,10 +43,10 @@ EXTENSION_TYPES = {
     "skills": {
         "pattern": "**/SKILL.md",
         "required_frontmatter": _SCHEMAS.get("skill_frontmatter", {}).get(
-            "required", ["name", "description"]
+            "required", []  # name and description are NOT required per official docs
         ),
         "optional_frontmatter": _SCHEMAS.get("skill_frontmatter", {}).get(
-            "optional", ["allowed-tools", "model", "context", "agent", "hooks",
+            "optional", ["name", "description", "allowed-tools", "model", "context", "agent", "hooks",
                         "argument-hint", "disable-model-invocation", "user-invocable"]
         ),
     },
@@ -73,18 +71,23 @@ EXTENSION_TYPES = {
     },
 }
 
-VALID_AGENT_COLORS = _SCHEMAS.get("hooks", {}).get(
+# Get hooks schema with proper structure handling
+_HOOKS_SCHEMA = _SCHEMAS.get("hooks", {})
+_HOOKS_EVENTS = _HOOKS_SCHEMA.get("events", {})
+
+# Handle both old format (list) and new format (dict with details)
+if isinstance(_HOOKS_EVENTS, list):
+    VALID_HOOK_EVENTS = _HOOKS_EVENTS
+else:
+    VALID_HOOK_EVENTS = list(_HOOKS_EVENTS.keys())
+
+VALID_AGENT_COLORS = _HOOKS_SCHEMA.get(
     "valid_colors", ["blue", "cyan", "green", "yellow", "magenta", "red"]
 )
-VALID_MODELS = _SCHEMAS.get("hooks", {}).get(
+VALID_MODELS = _HOOKS_SCHEMA.get(
     "valid_models", ["sonnet", "opus", "haiku"]
 )
-VALID_HOOK_EVENTS = _SCHEMAS.get("hooks", {}).get(
-    "events", ["PreToolUse", "PostToolUse", "Stop", "UserPromptSubmit",
-              "SessionStart", "SessionEnd", "PermissionRequest",
-              "PostToolUseFailure", "Notification", "SubagentStart",
-              "SubagentStop", "PreCompact"]
-)
+VALID_HOOK_TYPES = ["command", "prompt", "agent"]
 
 
 @dataclass
@@ -166,18 +169,17 @@ def validate_skill(path: Path) -> ValidationResult:
 
     frontmatter, body = parse_frontmatter(content)
 
-    # Check frontmatter exists
+    # Check frontmatter exists (recommended but not strictly required)
     if frontmatter is None:
-        result.errors.append("Missing YAML frontmatter (must start with ---)")
+        result.warnings.append("Missing YAML frontmatter - skill may not be discoverable")
         return result
 
-    # Required fields
-    if "name" not in frontmatter:
-        result.errors.append("Missing required frontmatter: 'name'")
+    # name and description are recommended but NOT required per official docs
+    # name defaults to directory name if not specified
     if "description" not in frontmatter:
-        result.errors.append("Missing required frontmatter: 'description'")
+        result.warnings.append("Missing 'description' in frontmatter - skill may not trigger automatically")
 
-    # Validate description length
+    # Validate description length if present
     desc = frontmatter.get("description", "")
     if isinstance(desc, str) and len(desc) > 500:
         result.warnings.append(f"Description is long ({len(desc)} chars), consider shortening")
@@ -218,7 +220,7 @@ def validate_agent(path: Path) -> ValidationResult:
         result.errors.append("Missing YAML frontmatter (must start with ---)")
         return result
 
-    # Required fields
+    # Required fields for agents
     if "name" not in frontmatter:
         result.errors.append("Missing required frontmatter: 'name'")
     if "description" not in frontmatter:
@@ -286,11 +288,13 @@ def validate_plugin(path: Path) -> ValidationResult:
         result.errors.append(f"Invalid plugin.json: {e}")
         return result
 
-    # Required fields
+    # Only 'name' is required per official docs
     if "name" not in manifest:
         result.errors.append("Missing 'name' in plugin.json")
+
+    # description is optional but recommended
     if "description" not in manifest:
-        result.errors.append("Missing 'description' in plugin.json")
+        result.warnings.append("Missing 'description' in plugin.json - recommended for discoverability")
 
     # Check bundled components exist
     for component in ["skills", "commands", "agents", "hooks"]:
@@ -307,12 +311,40 @@ def validate_hooks_json(path: Path) -> ValidationResult:
 
     try:
         with open(path) as f:
-            hooks = json.load(f)
+            data = json.load(f)
     except json.JSONDecodeError as e:
         result.errors.append(f"Invalid JSON: {e}")
         return result
 
+    # Determine if this is a plugin hooks.json (requires "hooks" wrapper)
+    # or a settings.json style (events at top level)
+    is_plugin_hooks = path.name == "hooks.json" and "hooks" in path.parts
+
+    # Check for the correct format
+    if is_plugin_hooks:
+        # Plugin hooks.json should have a "hooks" wrapper
+        if "hooks" not in data:
+            # Check if it looks like the old (incorrect) format
+            if any(key in VALID_HOOK_EVENTS for key in data.keys()):
+                result.errors.append(
+                    "Plugin hooks.json requires a 'hooks' wrapper. "
+                    "Use format: {\"hooks\": {\"EventName\": [...]}}"
+                )
+                return result
+            else:
+                result.errors.append("Missing 'hooks' key in plugin hooks.json")
+                return result
+        hooks = data["hooks"]
+    else:
+        # settings.json or direct hook config - events at top level or under "hooks"
+        hooks = data.get("hooks", data)
+
+    # Validate each event and its handlers
     for event, handlers in hooks.items():
+        # Skip non-event keys like "description"
+        if event in ("description",):
+            continue
+
         if event not in VALID_HOOK_EVENTS:
             result.warnings.append(f"Unknown hook event: '{event}'")
 
@@ -321,17 +353,53 @@ def validate_hooks_json(path: Path) -> ValidationResult:
             continue
 
         for handler in handlers:
-            hook_type = handler.get("type", "command")
-            if hook_type == "prompt":
-                if "prompt" not in handler:
-                    result.errors.append(f"Hook handler missing 'prompt' in '{event}'")
-            elif hook_type == "command":
-                if "command" not in handler:
-                    result.errors.append(f"Hook handler missing 'command' in '{event}'")
+            # Handler can be a direct hook or a matcher group
+            if "matcher" in handler:
+                # This is a matcher group - validate the nested hooks
+                if "hooks" not in handler:
+                    result.errors.append(f"Matcher group in '{event}' missing 'hooks' array")
+                    continue
+                nested_hooks = handler["hooks"]
+                if not isinstance(nested_hooks, list):
+                    result.errors.append(f"Matcher group 'hooks' in '{event}' must be a list")
+                    continue
+                for nested in nested_hooks:
+                    _validate_single_hook(nested, event, result)
+            elif "hooks" in handler:
+                # This is a handler group without matcher (for events without matchers)
+                nested_hooks = handler["hooks"]
+                if not isinstance(nested_hooks, list):
+                    result.errors.append(f"Handler group 'hooks' in '{event}' must be a list")
+                    continue
+                for nested in nested_hooks:
+                    _validate_single_hook(nested, event, result)
             else:
-                result.warnings.append(f"Unknown hook type '{hook_type}' in '{event}'")
+                # Direct hook definition
+                _validate_single_hook(handler, event, result)
 
     return result
+
+
+def _validate_single_hook(handler: dict, event: str, result: ValidationResult) -> None:
+    """Validate a single hook handler definition."""
+    hook_type = handler.get("type", "command")
+
+    if hook_type not in VALID_HOOK_TYPES:
+        result.warnings.append(f"Unknown hook type '{hook_type}' in '{event}'")
+        return
+
+    if hook_type == "command":
+        if "command" not in handler:
+            result.errors.append(f"Hook handler missing 'command' in '{event}'")
+    elif hook_type in ("prompt", "agent"):
+        if "prompt" not in handler:
+            result.errors.append(f"Hook handler missing 'prompt' in '{event}'")
+
+    # Validate model if specified
+    if "model" in handler:
+        model = handler["model"]
+        if model not in VALID_MODELS:
+            result.warnings.append(f"Unknown model '{model}' in '{event}' hook")
 
 
 def find_extensions(base_dir: Path, ext_type: str) -> List[Path]:
