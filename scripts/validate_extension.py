@@ -321,8 +321,15 @@ def validate_hooks_json(path: Path) -> ValidationResult:
             continue
 
         for handler in handlers:
-            if "command" not in handler:
-                result.errors.append(f"Hook handler missing 'command' in '{event}'")
+            hook_type = handler.get("type", "command")
+            if hook_type == "prompt":
+                if "prompt" not in handler:
+                    result.errors.append(f"Hook handler missing 'prompt' in '{event}'")
+            elif hook_type == "command":
+                if "command" not in handler:
+                    result.errors.append(f"Hook handler missing 'command' in '{event}'")
+            else:
+                result.warnings.append(f"Unknown hook type '{hook_type}' in '{event}'")
 
     return result
 
