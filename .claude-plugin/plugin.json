@@ -1,7 +1,7 @@
 {
   "name": "claude-extension-toolkit",
   "description": "Self-maintaining toolkit for creating Claude Code extensions. Provides workflow-based skills for building, configuring, and maintaining skills, agents, commands, plugins, and hooks.",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "author": {
     "name": "Sirtaj Singh Kang",
     "email": "sirtaj@sirtaj.net"

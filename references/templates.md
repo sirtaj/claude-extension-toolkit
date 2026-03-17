@@ -4,6 +4,8 @@ Ready-to-use templates for all extension types.
 
 ## Minimal Command
 
+**Note:** Commands and skills are now equivalent — both create slash commands. Prefer skills for new development as they support references and richer structure.
+
 ```markdown
 ---
 description: Brief description for /help
@@ -80,6 +82,10 @@ description: Comprehensive skill for X. Use when the user asks to "do X", "confi
 
 Domain expertise for X.
 
+## Current Context
+
+Branch: !`git branch --show-current`
+
 ## Quick Start
 
 Essential workflow:
@@ -112,6 +118,9 @@ description: |
   user: "Do X for me"
   assistant: "I'll launch my-agent to handle this."
   </example>
+maxTurns: 50
+background: false
+isolation: worktree
 ---
 
 # My Agent
@@ -149,6 +158,8 @@ tools:
   - Grep
   - WebFetch
 color: cyan
+permissionMode: default
+maxTurns: 100
 ---
 
 # Code Reviewer
@@ -248,6 +259,60 @@ my-plugin/
 
 **Note:** Plugin hooks.json requires a `hooks` wrapper object. The `description` field is optional but recommended.
 
+## HTTP Hook
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Write|Edit",
+      "hooks": [{
+        "type": "http",
+        "url": "https://example.com/hooks/file-changed",
+        "headers": {
+          "Authorization": "Bearer ${API_TOKEN}"
+        },
+        "allowedEnvVars": ["API_TOKEN"],
+        "timeout": 10,
+        "statusMessage": "Notifying service..."
+      }]
+    }]
+  }
+}
+```
+
+## Plugin Settings (settings.json)
+
+For shipping plugin defaults (at plugin root, not in `.claude/`):
+
+```json
+{
+  "agent": {
+    "defaultModel": "sonnet"
+  }
+}
+```
+
+**Note:** Currently only the `agent` key is supported in plugin-level settings.json.
+
+## LSP Configuration (.lsp.json)
+
+Configure language servers for a plugin:
+
+```json
+{
+  "servers": {
+    "pyright": {
+      "command": "basedpyright-langserver",
+      "args": ["--stdio"],
+      "languages": ["python"]
+    }
+  }
+}
+```
+
+**Location:** `<plugin>/.lsp.json`
+
 ## CLAUDE.md Templates
 
 ### Project Rules
@@ -296,9 +361,15 @@ my-plugin/
 ```json
 {
   "name": "my-marketplace",
+  "owner": {
+    "name": "Your Name"
+  },
+  "metadata": {
+    "description": "Description of this marketplace"
+  },
   "plugins": [
-    {"path": "plugin-a", "name": "plugin-a"},
-    {"path": "plugin-b", "name": "plugin-b"}
+    {"name": "plugin-a", "source": "./plugin-a", "description": "What plugin-a does", "version": "1.0.0"},
+    {"name": "plugin-b", "source": "./plugin-b", "description": "What plugin-b does", "version": "1.0.0"}
   ]
 }
 ```

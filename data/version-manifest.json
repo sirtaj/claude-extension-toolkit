@@ -1,7 +1,7 @@
 {
-  "manifest_version": "1.1",
-  "claude_code_version": "2.1.27",
-  "last_docs_sync": "2026-02-01T00:00:00Z",
+  "manifest_version": "1.2",
+  "claude_code_version": "2.1.77",
+  "last_docs_sync": "2026-03-17T00:00:00Z",
   "schemas": {
     "skill_frontmatter": {
       "required": [],
@@ -19,7 +19,26 @@
         "argument-hint",
         "disable-model-invocation",
         "user-invocable"
-      ]
+      ],
+      "validation": {
+        "name": {
+          "max_length": 64,
+          "pattern": "^[a-z0-9-]+$",
+          "description": "lowercase letters, numbers, hyphens only"
+        },
+        "description": {
+          "max_length": 1024,
+          "no_xml_tags": true
+        }
+      },
+      "variables": [
+        "$ARGUMENTS",
+        "$ARGUMENTS[N]",
+        "$N",
+        "${CLAUDE_SESSION_ID}",
+        "${CLAUDE_SKILL_DIR}"
+      ],
+      "dynamic_context": "!`command`"
     },
     "agent_frontmatter": {
       "required": [
@@ -33,8 +52,17 @@
         "color",
         "hooks",
         "permissionMode",
-        "skills"
-      ]
+        "skills",
+        "maxTurns",
+        "mcpServers",
+        "memory",
+        "background",
+        "isolation"
+      ],
+      "plugin_restrictions": {
+        "not_supported": ["hooks", "mcpServers", "permissionMode"],
+        "reason": "Security: plugin agents cannot override hook/permission/MCP configuration"
+      }
     },
     "command_frontmatter": {
       "required": [],
@@ -43,7 +71,8 @@
         "allowed-tools",
         "model",
         "argument-hint"
-      ]
+      ],
+      "note": "Commands merged into skills — both .claude/commands/foo.md and .claude/skills/foo/SKILL.md create /foo"
     },
     "plugin_manifest": {
       "required": [
@@ -121,15 +150,58 @@
           "has_matcher": true,
           "matcher_values": ["manual", "auto"]
         },
+        "PostCompact": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": ["manual", "auto"]
+        },
         "SessionEnd": {
           "can_block": false,
           "has_matcher": true,
-          "matcher_values": ["clear", "logout", "prompt_input_exit"]
+          "matcher_values": ["clear", "logout", "prompt_input_exit", "bypass_permissions_disabled", "other"]
+        },
+        "TeammateIdle": {
+          "can_block": true,
+          "has_matcher": false
+        },
+        "TaskCompleted": {
+          "can_block": true,
+          "has_matcher": false
+        },
+        "InstructionsLoaded": {
+          "can_block": false,
+          "has_matcher": false
+        },
+        "ConfigChange": {
+          "can_block": true,
+          "has_matcher": true,
+          "matcher_values": ["user_settings", "project_settings", "local_settings", "policy_settings", "skills"]
+        },
+        "WorktreeCreate": {
+          "can_block": true,
+          "has_matcher": false
+        },
+        "WorktreeRemove": {
+          "can_block": false,
+          "has_matcher": false
+        },
+        "Elicitation": {
+          "can_block": true,
+          "has_matcher": false
+        },
+        "ElicitationResult": {
+          "can_block": true,
+          "has_matcher": false
+        },
+        "Setup": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": ["--init", "--init-only", "--maintenance"]
         }
       },
       "handler_fields": {
         "type": {
-          "values": ["command", "prompt", "agent"],
+          "values": ["command", "prompt", "agent", "http"],
           "required": false,
           "default": "command"
         },
@@ -138,6 +210,18 @@
         },
         "prompt": {
           "required_for": ["prompt", "agent"]
+        },
+        "url": {
+          "required_for": "http"
+        },
+        "headers": {
+          "type": "object",
+          "used_by": "http"
+        },
+        "allowedEnvVars": {
+          "type": "array",
+          "used_by": "http",
+          "description": "Environment variables to include in request"
         },
         "timeout": {
           "type": "number"
@@ -161,6 +245,11 @@
         "opus",
         "haiku"
       ],
+      "valid_model_ids": [
+        "claude-opus-4-6",
+        "claude-sonnet-4-6",
+        "claude-haiku-4-5-20251001"
+      ],
       "valid_colors": [
         "blue",
         "cyan",
@@ -173,6 +262,21 @@
         "requires_hooks_wrapper": true,
         "optional_description": true
       }
+    },
+    "permission_modes": {
+      "values": ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan"],
+      "descriptions": {
+        "default": "Standard permission prompts",
+        "acceptEdits": "Auto-approve file edits, prompt for others",
+        "dontAsk": "Auto-approve most actions",
+        "bypassPermissions": "Skip all permission prompts (dangerous)",
+        "plan": "Require plan approval before execution"
+      }
+    },
+    "model_values": {
+      "short": ["sonnet", "opus", "haiku"],
+      "full_ids": ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
+      "special": ["inherit"]
     }
   },
   "deprecations": [
@@ -211,6 +315,30 @@
       "replacement": "code.claude.com",
       "since": "2.1.0",
       "severity": "warning"
+    },
+    {
+      "pattern": "$ARGUMENTS.0",
+      "replacement": "$ARGUMENTS[0] (indexed bracket syntax)",
+      "since": "2.1.19",
+      "severity": "warning"
+    },
+    {
+      "pattern": "Task tool",
+      "replacement": "Agent tool (Task still works as alias)",
+      "since": "2.1.63",
+      "severity": "warning"
+    },
+    {
+      "pattern": "PreToolUse top-level decision/reason",
+      "replacement": "hookSpecificOutput.permissionDecision",
+      "since": "2.1.0",
+      "severity": "error"
+    },
+    {
+      "pattern": "Agent resume param",
+      "replacement": "SendMessage({to: agentId})",
+      "since": "2.1.77",
+      "severity": "warning"
     }
   ],
   "canonical_urls": {
@@ -218,8 +346,12 @@
     "best_practices": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices",
     "subagents": "https://code.claude.com/docs/en/sub-agents",
     "hooks": "https://code.claude.com/docs/en/hooks",
+    "hooks_guide": "https://code.claude.com/docs/en/hooks-guide",
     "plugins": "https://code.claude.com/docs/en/plugins",
     "plugins_reference": "https://code.claude.com/docs/en/plugins-reference",
+    "plugin_marketplaces": "https://code.claude.com/docs/en/plugin-marketplaces",
+    "agent_teams": "https://code.claude.com/docs/en/agent-teams",
+    "scheduled_tasks": "https://code.claude.com/docs/en/scheduled-tasks",
     "settings": "https://code.claude.com/docs/en/settings",
     "docs_index": "https://code.claude.com/docs/llms.txt"
   }

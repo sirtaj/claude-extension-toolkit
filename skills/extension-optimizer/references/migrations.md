@@ -232,3 +232,81 @@ Detailed pattern documentation...
   }
 }
 ```
+
+## Task Tool → Agent Tool
+
+**Before (deprecated):**
+```yaml
+name: code-reviewer
+description: ...
+disallowedTools:
+  - Task
+```
+
+```
+Invoke via Task tool: `subagent_type: "code-reviewer"`
+```
+
+**After (current):**
+```yaml
+name: code-reviewer
+description: ...
+disallowedTools:
+  - Agent
+```
+
+```
+Invoke via Agent tool: `subagent_type: "code-reviewer"`
+```
+
+**Note:** `Task` still works as an alias but `Agent` is the canonical name.
+
+## Skill Arguments: Dot → Bracket Syntax
+
+**Before (deprecated):**
+```markdown
+Process file: $ARGUMENTS.0
+With option: $ARGUMENTS.1
+```
+
+**After (current):**
+```markdown
+Process file: $ARGUMENTS[0]
+With option: $ARGUMENTS[1]
+
+Or shorthand:
+Process file: $0
+With option: $1
+```
+
+## PreToolUse Output: Top-level → hookSpecificOutput
+
+**Before (deprecated):**
+```json
+{
+  "decision": "deny",
+  "reason": "Dangerous command detected"
+}
+```
+
+**After (current):**
+```json
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "deny",
+    "message": "Dangerous command detected"
+  }
+}
+```
+
+## Agent Resume: resume Param → SendMessage
+
+**Before (deprecated):**
+```
+Agent tool with resume: agentId
+```
+
+**After (current):**
+```
+SendMessage({to: "agentId", content: "Continue your work"})
+```

@@ -111,6 +111,21 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
+**Send HTTP notification:**
+```json
+{
+  "PostToolUse": [{
+    "matcher": "Write|Edit",
+    "hooks": [{
+      "type": "http",
+      "url": "https://example.com/hooks/file-changed",
+      "allowedEnvVars": ["API_TOKEN"],
+      "timeout": 10
+    }]
+  }]
+}
+```
+
 **Load context on start:**
 ```json
 {
@@ -151,6 +166,8 @@ exit 0
 - `2` - Block with stdout as message
 - Other - Error (logged, action allowed)
 
+**Advanced:** PreToolUse hooks can inject `additionalContext` into the conversation and modify tool input via `updatedInput` in `hookSpecificOutput`.
+
 ### Hook Events Reference
 
 | Event | Can Block | Use For |
@@ -160,7 +177,7 @@ exit 0
 | PostToolUse | No | Checks after save |
 | Stop | Yes | Cleanup tasks |
 
-See `references/hooks.md` for complete event list.
+21 events available — see `references/hooks.md` for the full list.
 
 ## Settings
 
@@ -191,6 +208,19 @@ For plugins, use `.claude/settings.local.json`:
   }
 }
 ```
+
+### Disable All Hooks
+
+Temporarily disable all hooks:
+```json
+{
+  "disableAllHooks": true
+}
+```
+
+Useful for debugging hook issues or running without automation.
+
+**Tip:** Use `/reload-plugins` to reload plugin hooks during development without restarting.
 
 ## Common Configurations
 

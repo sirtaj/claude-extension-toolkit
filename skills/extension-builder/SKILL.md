@@ -18,6 +18,8 @@ Creates properly structured Claude Code extensions.
 
 ## Creating Commands
 
+**Note:** Commands and skills are now equivalent — both create `/name` slash commands. Prefer skills for richer structure.
+
 Commands are user-invoked prompts.
 
 **Structure:**
@@ -89,9 +91,15 @@ Essential workflow:
 
 **Description format:** Third person, prescriptive. Include trigger phrases.
 
+**Name rules:** Max 64 chars, lowercase letters/numbers/hyphens only.
+
+**Dynamic context:** Use `` !`command` `` to inject runtime data into skills.
+
+**Anti-pattern:** Avoid offering menus or lists of options in skill output. Skills should take action based on context, not present choices.
+
 ## Creating Agents
 
-Agents run autonomously via the Task tool.
+Agents run autonomously via the Agent tool.
 
 **Structure:**
 ```
@@ -120,6 +128,8 @@ tools:
   - Glob
   - Grep
 color: cyan
+permissionMode: default
+maxTurns: 50
 ---
 
 # My Agent
@@ -144,6 +154,7 @@ Work through the task methodically:
 - Include `<example>` blocks for reliable triggering
 - Restrict tools to minimum needed
 - Define clear objectives
+- Use gerund naming: `processing-pdfs`, `reviewing-code`, `analyzing-logs`
 
 ## Creating Plugins
 
@@ -156,6 +167,8 @@ my-plugin/
 │   └── plugin.json
 ├── .claude/
 │   └── settings.local.json
+├── settings.json              # Plugin defaults (optional)
+├── .lsp.json                  # LSP server config (optional)
 ├── skills/
 ├── commands/
 ├── agents/
@@ -179,7 +192,7 @@ my-plugin/
 # Test during development
 claude --plugin-dir ./my-plugin
 
-# Restart to pick up changes (no hot reload)
+# Use /reload-plugins to pick up changes (no restart needed)
 
 # When ready, add to marketplace
 python scripts/marketplace_manager.py add <marketplace> ./my-plugin
@@ -218,6 +231,12 @@ Keep SKILL.md lean. Move details to `references/`:
 | Pointers | Advanced techniques |
 
 **Target:** SKILL.md under 1500 tokens total.
+
+**Limits:** SKILL.md should stay under ~500 lines. Add table of contents if references exceed 100 lines.
+
+## Evaluation-Driven Development
+
+Test skills across models (sonnet, opus, haiku) before deploying. Different models may interpret descriptions and workflows differently.
 
 ## Additional Resources
 

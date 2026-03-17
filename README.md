@@ -151,6 +151,12 @@ The toolkit maintains itself by:
 3. **Doc syncing** - Fetches canonical documentation on demand
 4. **Upgrade guidance** - Provides before/after migration examples
 
+## Version
+
+- Toolkit version: 3.0.0
+- Synced against: Claude Code v2.1.77
+- Last sync: 2026-03-17
+
 ## Credits
 
 Created by Sirtaj Singh Kang using Claude Code.

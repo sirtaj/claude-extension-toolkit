@@ -92,6 +92,10 @@ With approval, apply changes via Edit tool.
 | `$TOOL_OUTPUT` | Env vars deprecated | Parse JSON from stdin |
 | `decision: block` | Old format | Use `permissionDecision: deny` |
 | `docs.anthropic.com` | Old URL | Update to `code.claude.com` |
+| `Task` tool | Renamed | Use `Agent` tool (Task still works as alias) |
+| `$ARGUMENTS.0` | Old syntax | Use `$ARGUMENTS[0]` bracket syntax |
+| Top-level `decision` | Old format | Use `hookSpecificOutput.permissionDecision` |
+| Agent `resume` param | Removed | Use `SendMessage({to: agentId})` |
 
 ### Schema Issues
 
@@ -100,6 +104,7 @@ With approval, apply changes via Edit tool.
 | Missing `name` | Frontmatter check | Add name field |
 | Missing examples | Agent description | Add `<example>` blocks |
 | Wrong tool list | Frontmatter check | Use current schema |
+| Missing `maxTurns` | Agent check | Add if agent needs turn limits |
 
 ### Token Issues
 

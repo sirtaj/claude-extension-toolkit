@@ -21,8 +21,12 @@ What do you need?
 │  Examples: PDF editing, API integration
 │
 ├─ Autonomous work? ────────────────────► AGENT
-│  Multi-step tasks via Task tool
+│  Multi-step tasks via Agent tool
 │  Examples: code-reviewer, test-runner
+│
+├─ Coordinated work? ─────────────────► AGENT TEAMS
+│  Multiple agents collaborating
+│  Examples: plan+implement, research+write
 │
 ├─ Always-on behavior? ─────────────────► HOOKS
 │  Automatic triggers on events
@@ -43,7 +47,8 @@ What do you need?
 |------|---------|-------|----------|
 | Command | `/name` | Single action | `commands/name.md` |
 | Skill | Context match | Domain knowledge | `skills/name/SKILL.md` |
-| Agent | Task tool | Autonomous | `agents/name.md` |
+| Agent | Agent tool | Autonomous | `agents/name.md` |
+| Agent Team | TeamCreate | Multi-agent | `agents/*.md` |
 | Hook | Tool/event | Automatic | `settings.json` |
 | CLAUDE.md | Session start | Project rules | `./CLAUDE.md` |
 | Plugin | `/plugin install` | Bundled | `.claude-plugin/` |
@@ -115,3 +120,4 @@ For detailed guidance:
 - `/extension-builder` - Create extensions with full structure
 - `/extension-rules` - Configure CLAUDE.md and hooks
 - `/extension-optimizer` - Validate and improve extensions
+- Use `/reload-plugins` during development to test changes without restarting

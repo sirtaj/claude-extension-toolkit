@@ -13,7 +13,7 @@ allowed-tools:                        # Optional: tool restrictions
   - Grep
   - Glob
 model: sonnet                         # Optional: sonnet, opus, haiku
-context: ./context.md                 # Optional: additional context file
+context: fork                         # Optional: fork to run in subagent context
 agent: my-agent                       # Optional: execute as subagent
 hooks:                                # Optional: skill-scoped hooks
   PreToolUse: [...]
@@ -31,12 +31,18 @@ user-invocable: true                  # Optional: allow /skill-name syntax
 | `description` | Yes | string | Trigger conditions in third person |
 | `allowed-tools` | No | list | Restrict which tools the skill can use |
 | `model` | No | enum | Override model (sonnet, opus, haiku) |
-| `context` | No | string | Path to additional context file |
+| `context` | No | string | Set to `fork` to run in forked subagent context |
 | `agent` | No | string | Execute skill as named subagent |
 | `hooks` | No | object | Skill-specific hook definitions |
 | `argument-hint` | No | string | Prompt shown when invoked with `/skill` |
 | `disable-model-invocation` | No | bool | Prevent auto-activation, require `/skill` |
 | `user-invocable` | No | bool | Enable `/skill-name` invocation |
+
+### Name Validation
+
+- Maximum 64 characters
+- Lowercase letters, numbers, and hyphens only (`^[a-z0-9-]+$`)
+- Description maximum 1024 characters, no XML tags
 
 ### Description Best Practices
 
@@ -56,11 +62,42 @@ Include trigger phrases users might say:
 description: Analyzes Python code for type errors and linting issues. Use when the user mentions "type check", "lint", "ruff", or "pyright".
 ```
 
+### Skill Variables
+
+Variables available in skill content:
+
+| Variable | Purpose |
+|----------|---------|
+| `$ARGUMENTS` | Full argument string passed to skill |
+| `$ARGUMENTS[N]` | Nth argument (0-indexed) |
+| `$N` | Shorthand for `$ARGUMENTS[N]` (e.g., `$0`, `$1`) |
+| `${CLAUDE_SESSION_ID}` | Current session identifier |
+| `${CLAUDE_SKILL_DIR}` | Directory containing the SKILL.md file |
+
+### Dynamic Context Injection
+
+Use `` !`command` `` to inject dynamic content:
+
+```yaml
+---
+name: my-skill
+description: Skill with dynamic context
+---
+
+Current git status:
+!`git status --short`
+
+Current branch:
+!`git branch --show-current`
+```
+
+**Note:** The "ultrathink" keyword in skill content triggers extended thinking mode.
+
 ## Agent Frontmatter
 
 ```yaml
 ---
-name: agent-name                      # Required: Task tool identifier
+name: agent-name                      # Required: Agent tool identifier
 description: |                        # Required: with <example> blocks
   Autonomous agent for task X.
 
@@ -81,6 +118,12 @@ hooks:                                # Optional: agent-scoped hooks
 permissionMode: auto                  # Optional: permission handling
 skills:                               # Optional: preload skills
   - code-review
+maxTurns: 50                           # Optional: max conversation turns
+mcpServers:                            # Optional: MCP servers to load
+  - server-name
+memory: true                           # Optional: enable agent memory
+background: false                      # Optional: run in background
+isolation: worktree                    # Optional: git worktree isolation
 ---
 ```
 
@@ -88,15 +131,20 @@ skills:                               # Optional: preload skills
 
 | Field | Required | Type | Purpose |
 |-------|----------|------|---------|
-| `name` | Yes | string | Identifier for Task tool `subagent_type` |
+| `name` | Yes | string | Identifier for Agent tool `subagent_type` |
 | `description` | Yes | string | When to use, with example blocks |
 | `tools` | No | list | Whitelist of allowed tools |
 | `disallowedTools` | No | list | Blacklist of denied tools |
 | `model` | No | enum | Override model selection |
 | `color` | No | enum | blue, cyan, green, yellow, magenta, red |
 | `hooks` | No | object | Agent-specific hook definitions |
-| `permissionMode` | No | enum | How to handle permissions |
+| `permissionMode` | No | enum | How to handle permissions: default, acceptEdits, dontAsk, bypassPermissions, plan |
 | `skills` | No | list | Skills to preload into agent |
+| `maxTurns` | No | number | Maximum conversation turns |
+| `mcpServers` | No | list | MCP servers to load |
+| `memory` | No | bool | Enable persistent agent memory |
+| `background` | No | bool | Run agent in background |
+| `isolation` | No | enum | `worktree` for git worktree isolation |
 
 ### Example Blocks
 
@@ -116,6 +164,15 @@ description: |
   assistant: "Let me use security-analyzer to check for injection"
   </example>
 ```
+
+### Plugin Security Restrictions
+
+Agent definitions shipped in plugins do **not** support:
+- `hooks` — cannot override hook configuration
+- `mcpServers` — cannot inject MCP servers
+- `permissionMode` — cannot change permission handling
+
+These restrictions prevent plugins from escalating privileges.
 
 ## Command Frontmatter
 
@@ -142,6 +199,8 @@ argument-hint: "PR number"             # Optional: argument prompt
 | `argument-hint` | No | string | Prompt for arguments |
 
 Commands are invoked explicitly with `/command-name`, so they don't need trigger descriptions.
+
+**Note:** Commands have been merged into skills — both `.claude/commands/foo.md` and `.claude/skills/foo/SKILL.md` create the `/foo` slash command.
 
 ## Plugin Manifest (plugin.json)
 
@@ -175,9 +234,10 @@ Commands are invoked explicitly with `/command-name`, so they don't need trigger
 ## Valid Values
 
 ### Models
-- `sonnet` - Default, balanced
-- `opus` - Most capable, higher cost
-- `haiku` - Fastest, lowest cost
+- `sonnet` - Default, balanced (full ID: `claude-sonnet-4-6`)
+- `opus` - Most capable, higher cost (full ID: `claude-opus-4-6`)
+- `haiku` - Fastest, lowest cost (full ID: `claude-haiku-4-5-20251001`)
+- `inherit` - Use parent agent's model
 
 ### Agent Colors
 - `blue`, `cyan`, `green`, `yellow`, `magenta`, `red`

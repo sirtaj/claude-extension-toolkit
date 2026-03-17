@@ -34,7 +34,17 @@ For plugins, use `hooks/hooks.json` in the plugin directory (see Plugin Hooks se
 | `SubagentStop` | Subagent finished | Yes | Yes | Agent type name |
 | `Stop` | Agent finishes | Yes | No | - |
 | `PreCompact` | Before context compaction | No | Yes | manual, auto |
-| `SessionEnd` | Session terminates | No | Yes | clear, logout, prompt_input_exit, etc. |
+| `SessionEnd` | Session terminates | No | Yes | clear, logout, prompt_input_exit, bypass_permissions_disabled, other |
+| `PostCompact` | After context compaction | No | Yes | manual, auto |
+| `TeammateIdle` | Teammate agent is idle | Yes | No | - |
+| `TaskCompleted` | Background task completes | Yes | No | - |
+| `InstructionsLoaded` | CLAUDE.md/instructions loaded | No | No | - |
+| `ConfigChange` | Settings/config modified | Yes | Yes | user_settings, project_settings, local_settings, policy_settings, skills |
+| `WorktreeCreate` | Git worktree created | Yes | No | - |
+| `WorktreeRemove` | Git worktree removed | No | No | - |
+| `Elicitation` | Before showing elicitation dialog | Yes | No | - |
+| `ElicitationResult` | After user responds to elicitation | Yes | No | - |
+| `Setup` | CLI initialization/maintenance | No | Yes | --init, --init-only, --maintenance |
 
 ## Hook Types
 
@@ -92,6 +102,30 @@ Spawns a subagent with tool access:
 - `prompt` (required): Instructions for the agent
 - `model` (optional): Model to use
 
+### HTTP Hook
+
+Sends an HTTP request to a URL:
+
+```json
+{
+  "type": "http",
+  "url": "https://example.com/hooks/notify",
+  "headers": {
+    "Authorization": "Bearer ${API_TOKEN}"
+  },
+  "allowedEnvVars": ["API_TOKEN"],
+  "timeout": 30,
+  "statusMessage": "Sending notification..."
+}
+```
+
+**Fields:**
+- `url` (required): HTTP endpoint URL
+- `headers` (optional): Request headers (supports env var interpolation)
+- `allowedEnvVars` (optional): Environment variables to expose to the hook
+- `timeout` (optional): Timeout in seconds
+- `statusMessage` (optional): Custom spinner message
+
 ## Matchers
 
 For events with matcher support:
@@ -123,7 +157,9 @@ All hooks receive these fields:
   "session_id": "abc123...",
   "transcript_path": "/path/to/conversation.jsonl",
   "cwd": "/current/working/directory",
-  "permission_mode": "default"
+  "permission_mode": "default",
+  "agent_id": "optional-agent-id",
+  "agent_type": "optional-agent-type"
 }
 ```
 
@@ -139,6 +175,8 @@ All hooks receive these fields:
   }
 }
 ```
+
+PreToolUse hooks can also return `additionalContext` (string injected into context) and `updatedInput` (modified tool input object) via `hookSpecificOutput`.
 
 ### PostToolUse Input
 
@@ -178,6 +216,39 @@ All hooks receive these fields:
 }
 ```
 
+### TeammateIdle Input
+
+```json
+{
+  "hook_event_name": "TeammateIdle",
+  "session_id": "...",
+  "agent_id": "teammate-123",
+  "agent_type": "code-reviewer"
+}
+```
+
+### ConfigChange Input
+
+```json
+{
+  "hook_event_name": "ConfigChange",
+  "session_id": "...",
+  "config_type": "project_settings",
+  "changed_keys": ["hooks", "permissions"]
+}
+```
+
+### Elicitation Input
+
+```json
+{
+  "hook_event_name": "Elicitation",
+  "session_id": "...",
+  "elicitation_type": "question",
+  "elicitation_content": "..."
+}
+```
+
 ## Parsing JSON in Scripts
 
 Use `jq` to extract fields:
@@ -195,6 +266,8 @@ SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
 ```
 
 ## Hook Output
+
+**Note:** Top-level `decision`/`reason` fields in PreToolUse output are deprecated. Use `hookSpecificOutput.permissionDecision` instead.
 
 ### Allowing Actions
 
@@ -239,6 +312,33 @@ if [ "$WORK_INCOMPLETE" = "true" ]; then
     exit 2
 fi
 exit 0
+```
+
+### PermissionRequest Decision
+
+PermissionRequest hooks can return `updatedPermissions` to modify permission rules:
+
+```json
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "allow",
+    "updatedPermissions": [
+      {"tool": "Bash", "permission": "allow", "pattern": "npm test:*"}
+    ]
+  }
+}
+```
+
+### PostToolUse Modification
+
+PostToolUse hooks for MCP tools can return modified output:
+
+```json
+{
+  "hookSpecificOutput": {
+    "updatedMCPToolOutput": "modified output content"
+  }
+}
 ```
 
 ### Exit Codes
@@ -306,6 +406,8 @@ exit 0
 }
 ```
 
+**Tip:** SessionStart hooks can use `CLAUDE_ENV_FILE` — write `KEY=VALUE` lines to this file to persist environment variables for the session.
+
 ### Credential Detection
 
 ```json
@@ -357,3 +459,6 @@ Use `${CLAUDE_PLUGIN_ROOT}` for portable paths.
 5. **Use JSON parsing** - Don't rely on deprecated env vars
 6. **Test thoroughly** - Hook failures can disrupt workflow
 7. **Use statusMessage** - Provide feedback during long-running hooks
+8. **Disable all hooks** - Use `disableAllHooks: true` in settings to temporarily disable
+9. **SessionEnd timeout** - Set `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` env var for cleanup hooks
+10. **Deduplication** - Identical hooks (same event, matcher, handler) are deduplicated automatically

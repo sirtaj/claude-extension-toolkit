@@ -25,6 +25,12 @@
       "extract": ["hook_events", "input_schemas", "output_formats", "exit_codes"]
     },
     {
+      "id": "hooks_guide",
+      "url": "https://code.claude.com/docs/en/hooks-guide",
+      "purpose": "Hook patterns, recipes, advanced usage",
+      "extract": ["hook_patterns", "recipes", "advanced_usage"]
+    },
+    {
       "id": "plugins",
       "url": "https://code.claude.com/docs/en/plugins",
       "purpose": "Plugin structure, lifecycle, testing",
@@ -35,6 +41,24 @@
       "url": "https://code.claude.com/docs/en/plugins-reference",
       "purpose": "Complete technical specs",
       "extract": ["manifest_schema", "directory_structure", "api_reference"]
+    },
+    {
+      "id": "plugin_marketplaces",
+      "url": "https://code.claude.com/docs/en/plugin-marketplaces",
+      "purpose": "Marketplace structure, publishing, discovery",
+      "extract": ["marketplace_schema", "publishing_workflow", "discovery"]
+    },
+    {
+      "id": "agent_teams",
+      "url": "https://code.claude.com/docs/en/agent-teams",
+      "purpose": "Multi-agent coordination, team patterns",
+      "extract": ["team_patterns", "coordination", "agent_communication"]
+    },
+    {
+      "id": "scheduled_tasks",
+      "url": "https://code.claude.com/docs/en/scheduled-tasks",
+      "purpose": "Cron-based scheduled task execution",
+      "extract": ["cron_syntax", "task_management", "scheduling_patterns"]
     },
     {
       "id": "docs_index",

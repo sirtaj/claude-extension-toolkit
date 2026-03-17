@@ -36,7 +36,7 @@ disallowedTools:
   - Write
   - Edit
   - Bash
-  - Task
+  - Agent
 color: cyan
 model: sonnet
 ---
@@ -103,11 +103,11 @@ Severity levels: CRITICAL, HIGH, MEDIUM, LOW, INFO
 
 ## Usage
 
-Invoke via Task tool or let Claude auto-detect:
+Invoke via Agent tool or let Claude auto-detect:
 
 ```
 User: "Review the src/auth/ module for security issues"
-Claude: [launches code-reviewer agent]
+Claude: [launches code-reviewer via Agent tool]
 Agent: [reads files, analyzes, reports findings]
 ```
 

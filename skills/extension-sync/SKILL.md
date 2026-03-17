@@ -56,6 +56,10 @@ The toolkit tracks these official sources:
 | Hooks | `code.claude.com/docs/en/hooks` | Events, input format |
 | Plugins | `code.claude.com/docs/en/plugins` | Plugin structure |
 | Plugins Reference | `code.claude.com/docs/en/plugins-reference` | Complete specs |
+| Hooks Guide | `code.claude.com/docs/en/hooks-guide` | Hook patterns, recipes |
+| Agent Teams | `code.claude.com/docs/en/agent-teams` | Multi-agent coordination |
+| Plugin Marketplaces | `code.claude.com/docs/en/plugin-marketplaces` | Marketplace structure |
+| Scheduled Tasks | `code.claude.com/docs/en/scheduled-tasks` | Cron-based scheduling |
 
 ## Version Manifest
 
@@ -64,7 +68,7 @@ The toolkit maintains `data/version-manifest.json`:
 ```json
 {
   "manifest_version": "1.0",
-  "claude_code_version": "2.1.27",
+  "claude_code_version": "2.1.77",
   "last_docs_sync": "2026-01-31T12:00:00Z",
   "schemas": {
     "skill_frontmatter": {...},
@@ -74,6 +78,13 @@ The toolkit maintains `data/version-manifest.json`:
   "deprecations": [...]
 }
 ```
+
+### API Velocity
+
+Claude Code releases frequently (~50 releases in 6 weeks). Check for updates after major Claude Code version bumps. Key areas that change often:
+- Hook events (grew from 4 to 22 events)
+- Agent frontmatter fields
+- Tool availability
 
 ### Key Fields
 
