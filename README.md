@@ -1,6 +1,6 @@
 # Claude Extension Toolkit
 
-A self-maintaining toolkit for creating Claude Code extensions. Provides workflow-based skills for building, configuring, and maintaining skills, agents, commands, plugins, and hooks.
+A self-maintaining toolkit for creating Claude Code extensions. Provides workflow-based skills for building, configuring, and maintaining skills, agents, plugins, and hooks.
 
 ## Installation
 
@@ -22,21 +22,24 @@ Guides extension type decisions and provides quick-start templates.
 
 ```
 What do you need?
-├─ Quick reusable prompt?     → COMMAND
-├─ Domain expertise?          → SKILL
-├─ Autonomous work?           → AGENT
-├─ Always-on behavior?        → HOOKS
-├─ Project context?           → CLAUDE.md
-└─ Shareable package?         → PLUGIN
+├─ Slash command or expertise? ────► SKILL (also creates /commands)
+├─ Autonomous work? ──────────────► AGENT
+├─ Coordinated agents? ──────────► AGENT TEAMS
+├─ Always-on behavior? ──────────► HOOKS
+├─ Project context? ─────────────► CLAUDE.md
+└─ Shareable package? ───────────► PLUGIN
 ```
+
+> **Note:** Commands have been merged into skills. Both `commands/foo.md` and
+> `skills/foo/SKILL.md` create `/foo`. Prefer skills for new development.
 
 ### `/extension-builder` - Create Extensions
 
 Detailed guidance for creating any extension type with proper structure and frontmatter.
 
-**Use when:** Building skills, agents, commands, or plugins.
+**Use when:** Building skills, agents, or plugins.
 
-- Extension spectrum (commands → skills → agents → plugins)
+- Extension types: skills, agents, agent teams, plugins
 - Frontmatter reference and templates
 - Progressive disclosure patterns
 - Plugin lifecycle and marketplace integration
@@ -78,12 +81,22 @@ The toolkit includes shared reference files used by all skills:
 
 | Reference | Purpose |
 |-----------|---------|
-| `frontmatter.md` | All frontmatter fields for skills, agents, commands, plugins |
+| `frontmatter.md` | All frontmatter fields for skills, agents, plugins |
 | `templates.md` | Ready-to-use templates for all extension types |
 | `locations.md` | Storage locations and priority order |
 | `tools.md` | Tool restrictions and permission patterns |
 | `hooks.md` | Complete hooks reference with JSON input schemas |
 | `schema-definitions.md` | Current schemas (auto-updated by sync) |
+
+## Development
+
+```bash
+# Load plugin for testing
+claude --plugin-dir ./claude-extension-toolkit
+
+# Reload plugins without restarting
+/reload-plugins
+```
 
 ## Scripts
 
