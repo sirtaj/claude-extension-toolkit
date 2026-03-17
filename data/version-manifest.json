@@ -95,6 +95,63 @@
         "lspServers"
       ]
     },
+    "marketplace_manifest": {
+      "required": [
+        "name",
+        "owner",
+        "plugins"
+      ],
+      "required_owner_fields": [
+        "name"
+      ],
+      "optional_metadata": [
+        "description",
+        "version",
+        "pluginRoot"
+      ],
+      "reserved_names": [
+        "anthropic",
+        "claude",
+        "official",
+        "claude-code",
+        "anthropic-plugins"
+      ]
+    },
+    "marketplace_plugin_entry": {
+      "required": [
+        "name",
+        "source"
+      ],
+      "optional": [
+        "description",
+        "version",
+        "author",
+        "category",
+        "tags",
+        "strict",
+        "commands",
+        "agents",
+        "skills",
+        "hooks",
+        "mcpServers",
+        "outputStyles",
+        "lspServers"
+      ],
+      "source_types": [
+        "relative_path",
+        "github",
+        "url",
+        "git_subdir",
+        "npm",
+        "pip"
+      ],
+      "deprecated_fields": {
+        "path": {
+          "replacement": "source",
+          "severity": "warning"
+        }
+      }
+    },
     "hooks": {
       "events": {
         "SessionStart": {

@@ -39,7 +39,15 @@
 - [ ] `.claude-plugin/plugin.json` with name, description, version
 - [ ] No empty directories, all files exist
 - [ ] settings.local.json for dev permissions
-- [ ] If marketplace: registered with valid path
+- [ ] If marketplace: registered with valid source
+
+## Marketplace
+- [ ] `owner.name` present in marketplace.json
+- [ ] Plugin entries use `source` (not legacy `path`)
+- [ ] No reserved marketplace names (`anthropic`, `claude`, `official`, `claude-code`, `anthropic-plugins`)
+- [ ] Plugin versions set in one place (plugin.json or marketplace entry, not both conflicting)
+- [ ] Local plugin sources resolve to existing directories
+- [ ] All plugin paths use `${CLAUDE_PLUGIN_ROOT}`, no `../` references
 
 ## CLAUDE.md
 - [ ] Under 2000 tokens, no stale rules

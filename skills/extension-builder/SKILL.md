@@ -205,12 +205,13 @@ python scripts/marketplace_manager.py add <marketplace> ./my-plugin
 
 To register a plugin in a local marketplace:
 
-1. Validate plugin structure:
+1. Validate plugin structure (preferred — uses built-in validation):
    ```bash
-   python scripts/validate_extension.py ./my-plugin
+   /plugin validate ./my-plugin
+   # or: claude plugin validate ./my-plugin
    ```
 
-2. Add to marketplace:
+2. Add to marketplace (local management):
    ```bash
    python scripts/marketplace_manager.py add <marketplace-path> ./my-plugin
    ```
@@ -219,6 +220,8 @@ To register a plugin in a local marketplace:
    ```bash
    python scripts/marketplace_manager.py list <marketplace-path>
    ```
+
+Marketplaces support multiple source types beyond local paths (GitHub, npm, pip, URLs). See `references/marketplaces.md` for full marketplace documentation.
 
 ## Progressive Disclosure
 

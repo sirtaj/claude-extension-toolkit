@@ -357,7 +357,7 @@ Configure language servers for a plugin:
 
 ## Marketplace Registration
 
-**marketplace.json:**
+**marketplace.json (local plugins):**
 ```json
 {
   "name": "my-marketplace",
@@ -374,4 +374,56 @@ Configure language servers for a plugin:
 }
 ```
 
+**marketplace.json (GitHub source):**
+```json
+{
+  "name": "team-marketplace",
+  "owner": {
+    "name": "Team Name"
+  },
+  "plugins": [
+    {"name": "shared-plugin", "source": "github:org/shared-plugins", "description": "Shared tooling", "version": "2.0.0"}
+  ]
+}
+```
+
+**marketplace.json (with pluginRoot):**
+```json
+{
+  "name": "monorepo-marketplace",
+  "owner": {
+    "name": "Your Name"
+  },
+  "metadata": {
+    "pluginRoot": "./packages/plugins"
+  },
+  "plugins": [
+    {"name": "plugin-a", "source": "./plugin-a", "description": "Resolves to ./packages/plugins/plugin-a", "version": "1.0.0"}
+  ]
+}
+```
+
+**marketplace.json (with strict mode):**
+```json
+{
+  "name": "controlled-marketplace",
+  "owner": {
+    "name": "Admin"
+  },
+  "plugins": [
+    {
+      "name": "locked-plugin",
+      "source": "./locked-plugin",
+      "strict": false,
+      "skills": ["allowed-skill"],
+      "commands": ["allowed-command"]
+    }
+  ]
+}
+```
+
+When `strict` is `false`, only components listed in the marketplace entry are active (ignoring `plugin.json`).
+
 **Location:** `<marketplace-root>/.claude-plugin/marketplace.json`
+
+See `references/marketplaces.md` for full marketplace documentation including all source types, settings integration, and CLI commands.

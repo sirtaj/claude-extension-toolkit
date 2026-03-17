@@ -55,6 +55,15 @@ Local marketplaces (directories with plugins):
 - Any directory with `.claude-plugin/marketplace.json`
 - Register with: `/plugin marketplace add <path>`
 
+See `references/marketplaces.md` for full marketplace docs (source types, settings, CLI commands).
+
+## Plugin Caching
+
+Installed plugins are cached to `~/.claude/plugins/cache/`. This means:
+- Relative paths (`../`) in hooks or references break after installation
+- Always use `${CLAUDE_PLUGIN_ROOT}` for paths within the plugin
+- Use `claude --plugin-dir ./my-plugin` during development (bypasses cache)
+
 ## Discovery
 
 Claude discovers extensions at session start:

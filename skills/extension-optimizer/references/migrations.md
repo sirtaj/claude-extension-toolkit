@@ -261,6 +261,35 @@ Invoke via Agent tool: `subagent_type: "code-reviewer"`
 
 **Note:** `Task` still works as an alias but `Agent` is the canonical name.
 
+## Marketplace Plugin Entry: `path` → `source`
+
+**Before (legacy):**
+```json
+{
+  "plugins": [
+    {"path": "my-plugin", "name": "my-plugin"}
+  ]
+}
+```
+
+**After (current):**
+```json
+{
+  "plugins": [
+    {
+      "name": "my-plugin",
+      "source": "./my-plugin",
+      "description": "What the plugin does",
+      "version": "1.0.0"
+    }
+  ]
+}
+```
+
+The canonical schema uses `source` (not `path`). The `source` field supports multiple types: relative paths, GitHub refs, URLs, npm, and pip packages. Plugin entries should also include `description` and `version` from the plugin manifest.
+
+The marketplace itself also requires `owner.name` as a required field.
+
 ## Skill Arguments: Dot → Bracket Syntax
 
 **Before (deprecated):**

@@ -86,6 +86,7 @@ The toolkit includes shared reference files used by all skills:
 | `locations.md` | Storage locations and priority order |
 | `tools.md` | Tool restrictions and permission patterns |
 | `hooks.md` | Complete hooks reference with JSON input schemas |
+| `marketplaces.md` | Marketplace schema, source types, settings, CLI |
 | `schema-definitions.md` | Current schemas (auto-updated by sync) |
 
 ## Development
