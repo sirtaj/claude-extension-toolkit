@@ -114,6 +114,26 @@ Save to: `~/.claude/agents/my-agent.md`
 ```
 Add to: `~/.claude/settings.json` under `"hooks"`
 
+## Choose a marketplace layout
+
+Plugins are consumed via Claude Code's marketplace layer. Before scaffolding, pick one of two layouts:
+
+| Layout | Best when | Structure |
+|--------|-----------|-----------|
+| **Standalone (flat)** | Shipping one plugin; fastest path to installable | Plugin directory contains its own `.claude-plugin/marketplace.json` |
+| **Umbrella (aggregating)** | Shipping multiple related plugins under one owner | Parent directory holds `.claude-plugin/marketplace.json` aggregating N plugin subdirs |
+
+**Default recommendation:** standalone. The toolkit auto-creates marketplace.json at the plugin root, so the new plugin is installable immediately with `/plugin marketplace add <plugin-dir>`.
+
+**Pick umbrella when:** you already maintain ≥2 plugins with shared ownership and discovery, or you're adding a new plugin to an existing umbrella (in which case detection handles it automatically — see below).
+
+The one invariant: `marketplace.json` lives at exactly one level per tree — never both at the plugin root and an ancestor umbrella root.
+
+Full schema, source types, reserved names: [`references/marketplace-schema.md`](../../references/marketplace-schema.md)
+CLI, auth, caching: [`references/marketplaces.md`](../../references/marketplaces.md)
+
+This skill captures your layout choice and hands off to `extension-builder` for actual scaffolding. Detection (upward-search for an ancestor marketplace.json) and file writes happen there, not here.
+
 ## Next Steps
 
 For detailed guidance:
