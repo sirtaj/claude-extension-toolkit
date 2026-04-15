@@ -65,7 +65,9 @@ def needs_sync(manifest: dict, sources: dict) -> bool:
     try:
         last_sync_dt = datetime.fromisoformat(last_sync.replace("Z", "+00:00"))
         max_age = sources.get("sync_config", {}).get("max_age_days", 7)
-        return datetime.now(last_sync_dt.tzinfo) - last_sync_dt > timedelta(days=max_age)
+        return datetime.now(last_sync_dt.tzinfo) - last_sync_dt > timedelta(
+            days=max_age
+        )
     except (ValueError, TypeError):
         return True
 
@@ -74,8 +76,7 @@ def fetch_url(url: str, timeout: int = 30) -> Optional[str]:
     """Fetch content from URL."""
     try:
         req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "claude-extension-toolkit/1.0"}
+            url, headers={"User-Agent": "claude-extension-toolkit/1.0"}
         )
         with urllib.request.urlopen(req, timeout=timeout) as response:
             return response.read().decode("utf-8")
@@ -95,10 +96,16 @@ def cache_content(source_id: str, content: str):
 
     # Also save metadata
     meta_file = CACHE_DIR / f"{source_id}.meta.json"
-    meta_file.write_text(json.dumps({
-        "fetched_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "size": len(content)
-    }))
+    meta_file.write_text(
+        json.dumps(
+            {
+                "fetched_at": datetime.now(timezone.utc)
+                .isoformat()
+                .replace("+00:00", "Z"),
+                "size": len(content),
+            }
+        )
+    )
 
 
 def get_cached(source_id: str) -> Optional[str]:
@@ -169,7 +176,7 @@ Auto-generated from version manifest. Last updated: {timestamp}
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| name | Yes | string | Agent identifier (used with Task tool) |
+| name | Yes | string | Agent identifier (used with Agent tool; Task is a legacy alias) |
 | description | Yes | string | When to use, with <example> blocks |
 | tools | No | list | Allowed tools (default: all) |
 | disallowedTools | No | list | Explicitly denied tools |
@@ -217,7 +224,7 @@ Auto-generated from version manifest. Last updated: {timestamp}
 
     content = content.format(
         timestamp=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        events_table=events_table
+        events_table=events_table,
     )
 
     REFERENCES_DIR.mkdir(parents=True, exist_ok=True)
@@ -233,13 +240,9 @@ def main():
     parser.add_argument(
         "command",
         choices=["sync", "check", "show", "update-schemas"],
-        help="Command to run"
+        help="Command to run",
     )
-    parser.add_argument(
-        "source_id",
-        nargs="?",
-        help="Source ID for show command"
-    )
+    parser.add_argument("source_id", nargs="?", help="Source ID for show command")
 
     args = parser.parse_args()
 
@@ -258,7 +261,9 @@ def main():
     elif args.command == "sync":
         print("Syncing documentation sources...")
         if sync_docs(sources):
-            manifest["last_docs_sync"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            manifest["last_docs_sync"] = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
             save_manifest(manifest)
             print("\nSync complete. Updating schema definitions...")
             update_schema_definitions()

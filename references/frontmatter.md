@@ -27,7 +27,7 @@ user-invocable: true                  # Optional: allow /skill-name syntax
 
 | Field | Required | Type | Purpose |
 |-------|----------|------|---------|
-| `name` | Yes | string | Skill identifier (used in logs, Task tool) |
+| `name` | Yes | string | Skill identifier (used in logs; invoked via Agent tool — Task is a legacy alias) |
 | `description` | Yes | string | Trigger conditions in third person |
 | `allowed-tools` | No | list | Restrict which tools the skill can use |
 | `model` | No | enum | Override model (sonnet, opus, haiku) |

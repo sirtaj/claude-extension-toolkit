@@ -1,7 +1,7 @@
 {
   "manifest_version": "1.2",
   "claude_code_version": "2.1.77",
-  "last_docs_sync": "2026-03-17T00:00:00Z",
+  "last_docs_sync": "2026-04-15T20:17:40.466496Z",
   "schemas": {
     "skill_frontmatter": {
       "required": [],
@@ -60,7 +60,11 @@
         "isolation"
       ],
       "plugin_restrictions": {
-        "not_supported": ["hooks", "mcpServers", "permissionMode"],
+        "not_supported": [
+          "hooks",
+          "mcpServers",
+          "permissionMode"
+        ],
         "reason": "Security: plugin agents cannot override hook/permission/MCP configuration"
       }
     },
@@ -72,7 +76,7 @@
         "model",
         "argument-hint"
       ],
-      "note": "Commands merged into skills — both .claude/commands/foo.md and .claude/skills/foo/SKILL.md create /foo"
+      "note": "Commands merged into skills \u2014 both .claude/commands/foo.md and .claude/skills/foo/SKILL.md create /foo"
     },
     "plugin_manifest": {
       "required": [
@@ -96,11 +100,25 @@
       ]
     },
     "marketplace_manifest": {
-      "required": ["name", "owner", "plugins"],
-      "required_owner_fields": ["name"],
-      "optional_owner_fields": ["email"],
-      "optional": ["metadata"],
-      "metadata_fields": ["description", "version", "pluginRoot"],
+      "required": [
+        "name",
+        "owner",
+        "plugins"
+      ],
+      "required_owner_fields": [
+        "name"
+      ],
+      "optional_owner_fields": [
+        "email"
+      ],
+      "optional": [
+        "metadata"
+      ],
+      "metadata_fields": [
+        "description",
+        "version",
+        "pluginRoot"
+      ],
       "reserved_names": [
         "claude-code-marketplace",
         "claude-code-plugins",
@@ -113,7 +131,10 @@
       ]
     },
     "marketplace_plugin_entry": {
-      "required": ["name", "source"],
+      "required": [
+        "name",
+        "source"
+      ],
       "optional": [
         "description",
         "version",
@@ -134,18 +155,64 @@
         "lspServers"
       ],
       "field_types": {
-        "author": {"type": "object", "required": ["name"], "optional": ["email"]},
-        "keywords": {"type": "array"},
-        "homepage": {"type": "string"},
-        "repository": {"type": "string"},
-        "license": {"type": "string"}
+        "author": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "optional": [
+            "email"
+          ]
+        },
+        "keywords": {
+          "type": "array"
+        },
+        "homepage": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "license": {
+          "type": "string"
+        }
       },
       "source_types": {
-        "relative_path": {"format": "string starting with ./", "disallowed": ["../"]},
-        "github": {"fields": {"repo": "required", "ref": "optional", "sha": "optional"}},
-        "url": {"fields": {"url": "required", "ref": "optional", "sha": "optional"}},
-        "git-subdir": {"fields": {"url": "required", "path": "required", "ref": "optional", "sha": "optional"}},
-        "npm": {"fields": {"package": "required", "version": "optional", "registry": "optional"}}
+        "relative_path": {
+          "format": "string starting with ./",
+          "disallowed": [
+            "../"
+          ]
+        },
+        "github": {
+          "fields": {
+            "repo": "required",
+            "ref": "optional",
+            "sha": "optional"
+          }
+        },
+        "url": {
+          "fields": {
+            "url": "required",
+            "ref": "optional",
+            "sha": "optional"
+          }
+        },
+        "git-subdir": {
+          "fields": {
+            "url": "required",
+            "path": "required",
+            "ref": "optional",
+            "sha": "optional"
+          }
+        },
+        "npm": {
+          "fields": {
+            "package": "required",
+            "version": "optional",
+            "registry": "optional"
+          }
+        }
       },
       "deprecated_fields": {
         "path": {
@@ -159,7 +226,12 @@
         "SessionStart": {
           "can_block": false,
           "has_matcher": true,
-          "matcher_values": ["startup", "resume", "clear", "compact"]
+          "matcher_values": [
+            "startup",
+            "resume",
+            "clear",
+            "compact"
+          ]
         },
         "UserPromptSubmit": {
           "can_block": true,
@@ -188,7 +260,12 @@
         "Notification": {
           "can_block": false,
           "has_matcher": true,
-          "matcher_values": ["permission_prompt", "idle_prompt", "auth_success", "elicitation_dialog"]
+          "matcher_values": [
+            "permission_prompt",
+            "idle_prompt",
+            "auth_success",
+            "elicitation_dialog"
+          ]
         },
         "SubagentStart": {
           "can_block": false,
@@ -207,17 +284,29 @@
         "PreCompact": {
           "can_block": false,
           "has_matcher": true,
-          "matcher_values": ["manual", "auto"]
+          "matcher_values": [
+            "manual",
+            "auto"
+          ]
         },
         "PostCompact": {
           "can_block": false,
           "has_matcher": true,
-          "matcher_values": ["manual", "auto"]
+          "matcher_values": [
+            "manual",
+            "auto"
+          ]
         },
         "SessionEnd": {
           "can_block": false,
           "has_matcher": true,
-          "matcher_values": ["clear", "logout", "prompt_input_exit", "bypass_permissions_disabled", "other"]
+          "matcher_values": [
+            "clear",
+            "logout",
+            "prompt_input_exit",
+            "bypass_permissions_disabled",
+            "other"
+          ]
         },
         "TeammateIdle": {
           "can_block": true,
@@ -234,7 +323,13 @@
         "ConfigChange": {
           "can_block": true,
           "has_matcher": true,
-          "matcher_values": ["user_settings", "project_settings", "local_settings", "policy_settings", "skills"]
+          "matcher_values": [
+            "user_settings",
+            "project_settings",
+            "local_settings",
+            "policy_settings",
+            "skills"
+          ]
         },
         "WorktreeCreate": {
           "can_block": true,
@@ -255,12 +350,21 @@
         "Setup": {
           "can_block": false,
           "has_matcher": true,
-          "matcher_values": ["--init", "--init-only", "--maintenance"]
+          "matcher_values": [
+            "--init",
+            "--init-only",
+            "--maintenance"
+          ]
         }
       },
       "handler_fields": {
         "type": {
-          "values": ["command", "prompt", "agent", "http"],
+          "values": [
+            "command",
+            "prompt",
+            "agent",
+            "http"
+          ],
           "required": false,
           "default": "command"
         },
@@ -268,7 +372,10 @@
           "required_for": "command"
         },
         "prompt": {
-          "required_for": ["prompt", "agent"]
+          "required_for": [
+            "prompt",
+            "agent"
+          ]
         },
         "url": {
           "required_for": "http"
@@ -295,7 +402,11 @@
           "type": "boolean"
         },
         "model": {
-          "values": ["sonnet", "opus", "haiku"]
+          "values": [
+            "sonnet",
+            "opus",
+            "haiku"
+          ]
         }
       },
       "output_format": "hookSpecificOutput",
@@ -323,7 +434,13 @@
       }
     },
     "permission_modes": {
-      "values": ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan"],
+      "values": [
+        "default",
+        "acceptEdits",
+        "dontAsk",
+        "bypassPermissions",
+        "plan"
+      ],
       "descriptions": {
         "default": "Standard permission prompts",
         "acceptEdits": "Auto-approve file edits, prompt for others",
@@ -333,9 +450,19 @@
       }
     },
     "model_values": {
-      "short": ["sonnet", "opus", "haiku"],
-      "full_ids": ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
-      "special": ["inherit"]
+      "short": [
+        "sonnet",
+        "opus",
+        "haiku"
+      ],
+      "full_ids": [
+        "claude-opus-4-6",
+        "claude-sonnet-4-6",
+        "claude-haiku-4-5-20251001"
+      ],
+      "special": [
+        "inherit"
+      ]
     }
   },
   "deprecations": [
