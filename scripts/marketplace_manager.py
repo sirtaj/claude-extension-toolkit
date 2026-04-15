@@ -22,6 +22,25 @@ from pathlib import Path
 from typing import List, Tuple
 
 
+SCRIPT_DIR = Path(__file__).parent
+TOOLKIT_ROOT = SCRIPT_DIR.parent
+VERSION_MANIFEST = TOOLKIT_ROOT / "data" / "version-manifest.json"
+
+
+def _load_schema() -> dict:
+    """Load marketplace schema facts from version-manifest.json. Returns empty
+    dicts on missing/malformed manifest so validator degrades gracefully."""
+    try:
+        with open(VERSION_MANIFEST) as f:
+            schemas = json.load(f).get("schemas", {})
+    except (OSError, json.JSONDecodeError):
+        return {"marketplace_manifest": {}, "marketplace_plugin_entry": {}}
+    return {
+        "marketplace_manifest": schemas.get("marketplace_manifest", {}),
+        "marketplace_plugin_entry": schemas.get("marketplace_plugin_entry", {}),
+    }
+
+
 def _get_plugin_source(entry: dict) -> str | None:
     """Get plugin source from entry, preferring 'source' over legacy 'path'."""
     return entry.get("source") or entry.get("path")
@@ -36,77 +55,156 @@ def _resolve_source_path(marketplace_path: Path, source: str) -> Path | None:
     return None
 
 
-def validate_marketplace(marketplace_path: Path) -> Tuple[bool, List[str]]:
-    """Validate marketplace.json structure against canonical schema."""
-    errors = []
-    warnings = []
+def validate_marketplace(marketplace_path: Path) -> Tuple[List[str], List[str]]:
+    """Validate marketplace.json with tiered severity.
+
+    Returns (errors, warnings). Errors block installation; warnings are guidance.
+    Schema facts are loaded from data/version-manifest.json.
+    """
+    errors: List[str] = []
+    warnings: List[str] = []
+
+    schema = _load_schema()
+    mk_schema = schema["marketplace_manifest"]
+    plugin_schema = schema["marketplace_plugin_entry"]
+    reserved = set(mk_schema.get("reserved_names", []))
+    metadata_fields = set(
+        mk_schema.get("metadata_fields", ["description", "version", "pluginRoot"])
+    )
+    plugin_optional = set(plugin_schema.get("optional", []))  # noqa: F841
+    source_type_keys = set(plugin_schema.get("source_types", {}).keys())
+    # Fields whose absence triggers a warning (per CONTEXT.md tier)
+    warn_missing_plugin_optionals = {
+        "description",
+        "homepage",
+        "repository",
+        "license",
+        "keywords",
+    }
 
     manifest_file = marketplace_path / ".claude-plugin" / "marketplace.json"
     if not manifest_file.exists():
         errors.append(f"Missing {manifest_file}")
-        return False, errors
+        return errors, warnings
 
     try:
         with open(manifest_file) as f:
             manifest = json.load(f)
     except json.JSONDecodeError as e:
         errors.append(f"Invalid JSON in marketplace.json: {e}")
-        return False, errors
+        return errors, warnings
 
-    # Required fields
+    # --- Top-level required fields (HARD ERRORS) ---
     if "name" not in manifest:
         errors.append("Missing required 'name' field in marketplace.json")
+    else:
+        if manifest["name"] in reserved:
+            errors.append(
+                f"Marketplace name '{manifest['name']}' is reserved by Anthropic. "
+                f"Reserved list: {sorted(reserved)}"
+            )
 
-    # owner.name is required by canonical schema
     if "owner" not in manifest:
         errors.append("Missing required 'owner' field in marketplace.json")
     elif not isinstance(manifest["owner"], dict):
-        errors.append("'owner' must be an object")
+        errors.append("'owner' must be an object {name, email?}")
     elif "name" not in manifest["owner"]:
         errors.append("Missing required 'owner.name' field in marketplace.json")
 
+    # --- Metadata shape (HARD ERROR if not an object; WARNING for unknown keys) ---
+    if "metadata" in manifest:
+        if not isinstance(manifest["metadata"], dict):
+            errors.append("'metadata' must be an object, not a list or string")
+        else:
+            for k in manifest["metadata"].keys():
+                if k not in metadata_fields:
+                    warnings.append(
+                        f"Unknown metadata key '{k}' (known: {sorted(metadata_fields)})"
+                    )
+
+    # --- Plugins array ---
     if "plugins" not in manifest:
         errors.append("Missing required 'plugins' field in marketplace.json")
-    elif not isinstance(manifest["plugins"], list):
+        return errors, warnings
+    if not isinstance(manifest["plugins"], list):
         errors.append("'plugins' must be an array")
-    else:
-        # Validate each plugin entry
-        for i, plugin in enumerate(manifest["plugins"]):
-            if not isinstance(plugin, dict):
-                errors.append(f"Plugin entry {i} must be an object")
-                continue
+        return errors, warnings
 
-            # Check for source (preferred) vs path (legacy)
-            has_source = "source" in plugin
-            has_path = "path" in plugin
+    seen_names: dict[str, int] = {}
+    for i, plugin in enumerate(manifest["plugins"]):
+        if not isinstance(plugin, dict):
+            errors.append(f"Plugin entry {i} must be an object")
+            continue
 
-            if has_path and not has_source:
+        # Required: name
+        if "name" not in plugin:
+            errors.append(f"Plugin entry {i} missing 'name'")
+        else:
+            pname = plugin["name"]
+            if pname in seen_names:
                 warnings.append(
-                    f"Plugin entry {i} uses legacy 'path' field — migrate to 'source'"
+                    f"Duplicate plugin name '{pname}' at entries {seen_names[pname]} and {i}"
                 )
-
-            source = _get_plugin_source(plugin)
-            if not source:
-                errors.append(f"Plugin entry {i} missing 'source' (or legacy 'path')")
             else:
-                # Validate local paths exist
+                seen_names[pname] = i
+
+        # Required: source (or legacy path with warning)
+        has_source = "source" in plugin
+        has_path = "path" in plugin
+        if has_path and not has_source:
+            warnings.append(
+                f"Plugin entry {i} uses legacy 'path' field — migrate to 'source'"
+            )
+        source = _get_plugin_source(plugin)
+        if not source:
+            errors.append(f"Plugin entry {i} missing 'source' (or legacy 'path')")
+        else:
+            if isinstance(source, dict):
+                src_type = source.get("source")
+                if src_type and source_type_keys and src_type not in source_type_keys:
+                    errors.append(
+                        f"Plugin entry {i} unknown source type '{src_type}' "
+                        f"(known: {sorted(source_type_keys)})"
+                    )
+            elif isinstance(source, str):
+                if "../" in source:
+                    errors.append(
+                        f"Plugin entry {i} source '{source}' contains '../' — paths must stay inside marketplace root"
+                    )
                 local_path = _resolve_source_path(marketplace_path, source)
                 if local_path is not None:
                     if not local_path.exists():
-                        errors.append(f"Plugin source does not exist: {source}")
-                    elif not (local_path / ".claude-plugin" / "plugin.json").exists():
                         errors.append(
-                            f"Plugin '{source}' missing .claude-plugin/plugin.json"
+                            f"Plugin entry {i} source does not exist: {source}"
+                        )
+                    elif (
+                        not (local_path / ".claude-plugin" / "plugin.json").exists()
+                        and source != "./"
+                    ):
+                        errors.append(
+                            f"Plugin entry {i} source '{source}' missing .claude-plugin/plugin.json"
                         )
 
-            if "name" not in plugin:
-                errors.append(f"Plugin entry {i} missing 'name'")
+        # Author shape (HARD ERROR if present and not an object)
+        if "author" in plugin and not isinstance(plugin["author"], dict):
+            errors.append(
+                f"Plugin entry {i} 'author' must be an object {{name, email?}}, got "
+                f"{type(plugin['author']).__name__}"
+            )
+        elif isinstance(plugin.get("author"), dict) and "name" not in plugin["author"]:
+            errors.append(
+                f"Plugin entry {i} 'author' object missing required 'name' field"
+            )
 
-    # Print warnings
-    for warning in warnings:
-        print(f"  WARNING: {warning}", file=sys.stderr)
+        # Optional fields missing (WARNINGS)
+        pname_for_warn = plugin.get("name", f"entry-{i}")
+        for optf in warn_missing_plugin_optionals:
+            if optf not in plugin:
+                warnings.append(
+                    f"Plugin '{pname_for_warn}' missing optional field '{optf}'"
+                )
 
-    return len(errors) == 0, errors
+    return errors, warnings
 
 
 def validate_plugin(plugin_path: Path) -> Tuple[bool, List[str]]:
@@ -268,17 +366,32 @@ def main():
     marketplace_path = Path(args.marketplace_path).resolve()
 
     if args.command == "validate":
-        is_valid, errors = validate_marketplace(marketplace_path)
+        errors, warnings = validate_marketplace(marketplace_path)
         if args.json:
-            print(json.dumps({"valid": is_valid, "errors": errors}))
+            print(
+                json.dumps(
+                    {
+                        "valid": len(errors) == 0,
+                        "errors": errors,
+                        "warnings": warnings,
+                    },
+                    indent=2,
+                )
+            )
         else:
-            if is_valid:
+            if errors:
+                print("ERRORS:")
+                for e in errors:
+                    print(f"  - {e}")
+            if warnings:
+                print("WARNINGS:")
+                for w in warnings:
+                    print(f"  - {w}")
+            if not errors and not warnings:
                 print("Marketplace is valid.")
-            else:
-                print("Validation errors:")
-                for error in errors:
-                    print(f"  - {error}")
-        sys.exit(0 if is_valid else 1)
+            elif not errors:
+                print(f"\nMarketplace is valid (with {len(warnings)} warning(s)).")
+        sys.exit(0 if not errors else 1)
 
     elif args.command == "add":
         if not args.plugin_path:
