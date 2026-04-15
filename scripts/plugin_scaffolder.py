@@ -27,7 +27,7 @@ def create_plugin_structure(
     output_dir: Path,
     description: str = "",
     author_name: str = "",
-    author_email: str = ""
+    author_email: str = "",
 ) -> Path:
     """Create plugin directory structure."""
     plugin_dir = output_dir / name
@@ -41,12 +41,13 @@ def create_plugin_structure(
     (plugin_dir / "commands").mkdir()
     (plugin_dir / "agents").mkdir()
     (plugin_dir / "hooks").mkdir()
+    (plugin_dir / ".claude").mkdir()
 
     # Create plugin.json
     manifest = {
         "name": name,
         "description": description or f"{name} plugin for Claude Code",
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
 
     if author_name:
@@ -60,11 +61,7 @@ def create_plugin_structure(
         json.dump(manifest, f, indent=2)
 
     # Create settings.local.json for development
-    settings = {
-        "permissions": {
-            "allow": []
-        }
-    }
+    settings = {"permissions": {"allow": []}}
     with open(plugin_dir / ".claude" / "settings.local.json", "w") as f:
         json.dump(settings, f, indent=2)
 
@@ -130,46 +127,28 @@ MIT
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Scaffold a new Claude Code plugin"
-    )
+    parser = argparse.ArgumentParser(description="Scaffold a new Claude Code plugin")
+    parser.add_argument("name", help="Plugin name (will be directory name)")
     parser.add_argument(
-        "name",
-        help="Plugin name (will be directory name)"
+        "--output", "-o", default=".", help="Output directory (default: current)"
     )
-    parser.add_argument(
-        "--output", "-o",
-        default=".",
-        help="Output directory (default: current)"
-    )
-    parser.add_argument(
-        "--description", "-d",
-        default="",
-        help="Plugin description"
-    )
-    parser.add_argument(
-        "--author",
-        default="",
-        help="Author name"
-    )
-    parser.add_argument(
-        "--email",
-        default="",
-        help="Author email"
-    )
+    parser.add_argument("--description", "-d", default="", help="Plugin description")
+    parser.add_argument("--author", default="", help="Author name")
+    parser.add_argument("--email", default="", help="Author email")
 
     args = parser.parse_args()
 
     # Validate name
     if not args.name.replace("-", "").replace("_", "").isalnum():
-        print("Error: Plugin name must be alphanumeric with dashes/underscores",
-              file=sys.stderr)
+        print(
+            "Error: Plugin name must be alphanumeric with dashes/underscores",
+            file=sys.stderr,
+        )
         sys.exit(2)
 
     output_dir = Path(args.output).resolve()
     if not output_dir.exists():
-        print(f"Error: Output directory does not exist: {output_dir}",
-              file=sys.stderr)
+        print(f"Error: Output directory does not exist: {output_dir}", file=sys.stderr)
         sys.exit(2)
 
     try:
@@ -178,12 +157,12 @@ def main():
             output_dir=output_dir,
             description=args.description,
             author_name=args.author,
-            author_email=args.email
+            author_email=args.email,
         )
         print(f"Created plugin at: {plugin_dir}")
-        print(f"\nNext steps:")
+        print("\nNext steps:")
         print(f"  1. cd {plugin_dir}")
-        print(f"  2. Edit skills/, commands/, or agents/")
+        print("  2. Edit skills/, commands/, or agents/")
         print(f"  3. Test with: claude --plugin-dir {plugin_dir}")
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
