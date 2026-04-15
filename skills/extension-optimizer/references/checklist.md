@@ -44,10 +44,14 @@
 ## Marketplace
 - [ ] `owner.name` present in marketplace.json
 - [ ] Plugin entries use `source` (not legacy `path`)
-- [ ] No reserved marketplace names (`anthropic`, `claude`, `official`, `claude-code`, `anthropic-plugins`)
+- [ ] No reserved marketplace names (see `data/version-manifest.json` `schemas.marketplace_manifest.reserved_names`)
 - [ ] Plugin versions set in one place (plugin.json or marketplace entry, not both conflicting)
 - [ ] Local plugin sources resolve to existing directories
 - [ ] All plugin paths use `${CLAUDE_PLUGIN_ROOT}`, no `../` references
+- [ ] Run `scripts/marketplace_manager.py validate <root> --json`; no errors in output
+- [ ] All plugin entries have `description`, `homepage`, `license`, `keywords` (warnings clean)
+- [ ] Marketplace name not in reserved list
+- [ ] `author` field (if present) is an object `{name, email?}`, not a string
 
 ## CLAUDE.md
 - [ ] Under 2000 tokens, no stale rules
