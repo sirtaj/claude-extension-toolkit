@@ -46,7 +46,7 @@ Canonical docs: https://code.claude.com/docs/en/plugin-marketplaces
   "source": "./my-plugin",
   "description": "What the plugin does",
   "version": "1.0.0",
-  "author": "Author Name",
+  "author": { "name": "Author Name", "email": "author@example.com" },
   "category": "development",
   "tags": ["python", "linting"],
   "strict": true
@@ -59,9 +59,13 @@ Canonical docs: https://code.claude.com/docs/en/plugin-marketplaces
 | `source` | string/object | yes | Where to find the plugin (see source types) |
 | `description` | string | recommended | What the plugin does |
 | `version` | string | recommended | Semver version |
-| `author` | string | no | Plugin author |
+| `author` | object | no | `{name: string, email?: string}` |
 | `category` | string | no | Plugin category |
 | `tags` | array | no | Search/filter tags |
+| `homepage` | string | no | Homepage or docs URL |
+| `repository` | string | no | Source repo URL |
+| `license` | string | no | SPDX identifier (e.g. `MIT`, `Apache-2.0`) |
+| `keywords` | array | no | Discovery tags (synonym of `tags`) |
 | `strict` | boolean | no | Strict mode (default: true) |
 
 Additionally, plugin entries can include component config fields (`commands`, `agents`, `skills`, `hooks`, `mcpServers`, `outputStyles`, `lspServers`) to override or supplement what's in `plugin.json`.
@@ -75,7 +79,6 @@ Additionally, plugin entries can include component config fields (`commands`, `a
 | GitHub subdir | `"github:owner/repo/path"` | `"github:org/monorepo/plugins/my-plugin"` |
 | URL | `"https://..."` | `"https://example.com/plugin.tar.gz"` |
 | npm | `"npm:package-name"` | `"npm:@scope/claude-plugin"` |
-| pip | `"pip:package-name"` | `"pip:claude-my-plugin"` |
 
 ### GitHub with Branch/Tag
 
@@ -182,7 +185,14 @@ The `/plugin` slash command mirrors the CLI:
 
 The following names are reserved and cannot be used for third-party marketplaces:
 
-`anthropic`, `claude`, `official`, `claude-code`, `anthropic-plugins`
+- `claude-code-marketplace`
+- `claude-code-plugins`
+- `claude-plugins-official`
+- `anthropic-marketplace`
+- `anthropic-plugins`
+- `agent-skills`
+- `knowledge-work-plugins`
+- `life-sciences`
 
 ## Version Resolution
 
