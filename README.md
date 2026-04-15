@@ -12,6 +12,57 @@ A self-maintaining toolkit for creating Claude Code extensions. Provides workflo
 claude --plugin-dir ./claude-extension-toolkit
 ```
 
+## Marketplace Support
+
+Plugins built with this toolkit are consumable via Claude Code's local marketplace system. Two layouts are supported:
+
+### Standalone (flat)
+
+One plugin directory that is also its own single-entry marketplace. Fastest path to installable.
+
+```
+my-plugin/
+└── .claude-plugin/
+    ├── plugin.json
+    └── marketplace.json   # auto-created by extension-builder
+```
+
+Install:
+```bash
+/plugin marketplace add ./my-plugin
+/plugin install my-plugin@my-plugin
+```
+
+The toolkit's `extension-builder` scaffolds standalone layouts by default — the generated plugin is installable immediately with no extra wiring.
+
+### Umbrella (aggregating)
+
+One marketplace directory containing N plugin subdirs. Ideal when shipping a related plugin set.
+
+```
+my-marketplace/
+├── .claude-plugin/marketplace.json   # aggregates plugin-a, plugin-b
+├── plugin-a/.claude-plugin/plugin.json
+└── plugin-b/.claude-plugin/plugin.json
+```
+
+Install:
+```bash
+/plugin marketplace add ./my-marketplace
+/plugin install plugin-a@my-marketplace
+```
+
+When you scaffold a new plugin inside an umbrella, `extension-builder` detects the ancestor marketplace.json via upward search and registers the new plugin into it — no inner marketplace.json is created.
+
+### The one-level invariant
+
+`marketplace.json` lives at exactly one level per tree — either the plugin root (standalone) or the umbrella root (umbrella), never both. Promotion (standalone → umbrella) is a separate migration flow, not yet automated; see `.planning/seeds/marketplace-promotion-flow.md`.
+
+### Schema reference
+
+Full schema, source types, reserved names, and pitfalls: [`references/marketplace-schema.md`](references/marketplace-schema.md)
+Companion CLI/auth/caching reference: [`references/marketplaces.md`](references/marketplaces.md)
+
 ## Skills
 
 ### `/extension-starter` - Entry Point
