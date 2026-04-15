@@ -80,7 +80,7 @@
 ## Running Checks
 
 ```bash
-python scripts/validate_extension.py --all
-python scripts/pattern_detector.py --all
-python scripts/token_counter.py --all --top 10
+${CLAUDE_PLUGIN_ROOT}/scripts/validate_extension.py --all
+${CLAUDE_PLUGIN_ROOT}/scripts/pattern_detector.py --all
+${CLAUDE_PLUGIN_ROOT}/scripts/token_counter.py --all --top 10
 ```

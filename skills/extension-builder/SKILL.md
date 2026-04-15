@@ -195,7 +195,7 @@ claude --plugin-dir ./my-plugin
 # Use /reload-plugins to pick up changes (no restart needed)
 
 # When ready, add to marketplace
-python scripts/marketplace_manager.py add <marketplace> ./my-plugin
+${CLAUDE_PLUGIN_ROOT}/scripts/marketplace_manager.py add <marketplace> ./my-plugin
 
 # Install for production
 /plugin install my-plugin@marketplace-name
@@ -213,12 +213,12 @@ To register a plugin in a local marketplace:
 
 2. Add to marketplace (local management):
    ```bash
-   python scripts/marketplace_manager.py add <marketplace-path> ./my-plugin
+   ${CLAUDE_PLUGIN_ROOT}/scripts/marketplace_manager.py add <marketplace-path> ./my-plugin
    ```
 
 3. Verify:
    ```bash
-   python scripts/marketplace_manager.py list <marketplace-path>
+   ${CLAUDE_PLUGIN_ROOT}/scripts/marketplace_manager.py list <marketplace-path>
    ```
 
 Marketplaces support multiple source types beyond local paths (GitHub, npm, pip, URLs). See `references/marketplaces.md` for full marketplace documentation.

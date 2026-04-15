@@ -15,19 +15,19 @@ Run toolkit scripts:
 cd ~/.claude/plugins/claude-extension-toolkit
 
 # Validate structure
-python scripts/validate_extension.py <path>
-python scripts/validate_extension.py --all
+${CLAUDE_PLUGIN_ROOT}/scripts/validate_extension.py <path>
+${CLAUDE_PLUGIN_ROOT}/scripts/validate_extension.py --all
 
 # Check for deprecated patterns
-python scripts/pattern_detector.py <path>
-python scripts/pattern_detector.py --all
+${CLAUDE_PLUGIN_ROOT}/scripts/pattern_detector.py <path>
+${CLAUDE_PLUGIN_ROOT}/scripts/pattern_detector.py --all
 
 # Count tokens
-python scripts/token_counter.py <path>
-python scripts/token_counter.py --all --top 10
+${CLAUDE_PLUGIN_ROOT}/scripts/token_counter.py <path>
+${CLAUDE_PLUGIN_ROOT}/scripts/token_counter.py --all --top 10
 
 # Validate marketplace
-python scripts/marketplace_manager.py validate <marketplace-path>
+${CLAUDE_PLUGIN_ROOT}/scripts/marketplace_manager.py validate <marketplace-path>
 ```
 
 ## Audit Workflow
@@ -119,7 +119,7 @@ With approval, apply changes via Edit tool.
 ### Validate Plugin Structure
 
 ```bash
-python scripts/validate_extension.py <plugin-path>
+${CLAUDE_PLUGIN_ROOT}/scripts/validate_extension.py <plugin-path>
 ```
 
 Common issues:
@@ -130,7 +130,7 @@ Common issues:
 ### Marketplace Consistency
 
 ```bash
-python scripts/marketplace_manager.py validate <marketplace-path>
+${CLAUDE_PLUGIN_ROOT}/scripts/marketplace_manager.py validate <marketplace-path>
 ```
 
 Checks:

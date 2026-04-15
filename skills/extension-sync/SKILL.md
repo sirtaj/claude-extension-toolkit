@@ -12,7 +12,7 @@ Keep the toolkit current with Claude Code changes.
 Check sync status:
 ```bash
 cd ~/.claude/plugins/claude-extension-toolkit
-python scripts/docs_fetcher.py check
+${CLAUDE_PLUGIN_ROOT}/scripts/docs_fetcher.py check
 ```
 
 ## Sync Workflow
@@ -20,7 +20,7 @@ python scripts/docs_fetcher.py check
 ### 1. Fetch Latest Docs
 
 ```bash
-python scripts/docs_fetcher.py sync
+${CLAUDE_PLUGIN_ROOT}/scripts/docs_fetcher.py sync
 ```
 
 This:
@@ -126,14 +126,14 @@ To force a full sync:
 cd ~/.claude/plugins/claude-extension-toolkit
 
 # Fetch all docs
-python scripts/docs_fetcher.py sync
+${CLAUDE_PLUGIN_ROOT}/scripts/docs_fetcher.py sync
 
 # Regenerate schema definitions
-python scripts/docs_fetcher.py update-schemas
+${CLAUDE_PLUGIN_ROOT}/scripts/docs_fetcher.py update-schemas
 
 # Check your extensions against new schemas
-python scripts/validate_extension.py --all
-python scripts/pattern_detector.py --all
+${CLAUDE_PLUGIN_ROOT}/scripts/validate_extension.py --all
+${CLAUDE_PLUGIN_ROOT}/scripts/pattern_detector.py --all
 ```
 
 ## What Gets Updated
@@ -176,5 +176,5 @@ If validation finds unknown fields:
 Force refresh:
 ```bash
 rm -rf data/cache/
-python scripts/docs_fetcher.py sync
+${CLAUDE_PLUGIN_ROOT}/scripts/docs_fetcher.py sync
 ```

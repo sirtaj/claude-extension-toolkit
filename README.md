@@ -107,23 +107,23 @@ Utility scripts for extension management:
 cd ~/.claude/plugins/claude-extension-toolkit
 
 # Validate extension structure
-python scripts/validate_extension.py <path>
-python scripts/validate_extension.py --all
+scripts/validate_extension.py <path>
+scripts/validate_extension.py --all
 
 # Detect deprecated patterns
-python scripts/pattern_detector.py <path>
+scripts/pattern_detector.py <path>
 
 # Count tokens
-python scripts/token_counter.py <path> --verbose
+scripts/token_counter.py <path> --verbose
 
 # Manage marketplace
-python scripts/marketplace_manager.py list <marketplace-path>
+scripts/marketplace_manager.py list <marketplace-path>
 
 # Scaffold new plugin
-python scripts/plugin_scaffolder.py my-plugin --output ./
+scripts/plugin_scaffolder.py my-plugin --output ./
 
 # Sync documentation
-python scripts/docs_fetcher.py sync
+scripts/docs_fetcher.py sync
 ```
 
 ## Architecture
