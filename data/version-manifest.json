@@ -96,36 +96,32 @@
       ]
     },
     "marketplace_manifest": {
-      "required": [
-        "name",
-        "owner",
-        "plugins"
-      ],
-      "required_owner_fields": [
-        "name"
-      ],
-      "optional_metadata": [
-        "description",
-        "version",
-        "pluginRoot"
-      ],
+      "required": ["name", "owner", "plugins"],
+      "required_owner_fields": ["name"],
+      "optional_owner_fields": ["email"],
+      "optional": ["metadata"],
+      "metadata_fields": ["description", "version", "pluginRoot"],
       "reserved_names": [
-        "anthropic",
-        "claude",
-        "official",
-        "claude-code",
-        "anthropic-plugins"
+        "claude-code-marketplace",
+        "claude-code-plugins",
+        "claude-plugins-official",
+        "anthropic-marketplace",
+        "anthropic-plugins",
+        "agent-skills",
+        "knowledge-work-plugins",
+        "life-sciences"
       ]
     },
     "marketplace_plugin_entry": {
-      "required": [
-        "name",
-        "source"
-      ],
+      "required": ["name", "source"],
       "optional": [
         "description",
         "version",
         "author",
+        "homepage",
+        "repository",
+        "license",
+        "keywords",
         "category",
         "tags",
         "strict",
@@ -137,14 +133,20 @@
         "outputStyles",
         "lspServers"
       ],
-      "source_types": [
-        "relative_path",
-        "github",
-        "url",
-        "git_subdir",
-        "npm",
-        "pip"
-      ],
+      "field_types": {
+        "author": {"type": "object", "required": ["name"], "optional": ["email"]},
+        "keywords": {"type": "array"},
+        "homepage": {"type": "string"},
+        "repository": {"type": "string"},
+        "license": {"type": "string"}
+      },
+      "source_types": {
+        "relative_path": {"format": "string starting with ./", "disallowed": ["../"]},
+        "github": {"fields": {"repo": "required", "ref": "optional", "sha": "optional"}},
+        "url": {"fields": {"url": "required", "ref": "optional", "sha": "optional"}},
+        "git-subdir": {"fields": {"url": "required", "path": "required", "ref": "optional", "sha": "optional"}},
+        "npm": {"fields": {"package": "required", "version": "optional", "registry": "optional"}}
+      },
       "deprecated_fields": {
         "path": {
           "replacement": "source",
