@@ -41,7 +41,7 @@ After sync, check for:
 
 If changes affect your extensions:
 1. Run `/extension-optimizer` to check
-2. Apply migrations from `references/migrations.md`
+2. Apply migrations from [`../../references/migrations.md`](../../references/migrations.md)
 3. Test affected extensions
 
 ## Canonical Sources

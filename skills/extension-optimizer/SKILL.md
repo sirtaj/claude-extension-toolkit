@@ -161,7 +161,7 @@ For major updates:
 5. **Validate** after changes
 6. **Test** extension behavior
 
-See `references/migrations.md` for before/after examples.
+See [`../../references/migrations.md`](../../references/migrations.md) for before/after examples.
 
 ## Token Optimization
 
@@ -189,5 +189,5 @@ Move details from SKILL.md to references/:
 
 ## Additional Resources
 
-- `references/migrations.md` - Before/after upgrade examples
-- `references/checklist.md` - Complete audit checklist
+- [`../../references/migrations.md`](../../references/migrations.md) - Before/after upgrade examples
+- [`references/checklist.md`](references/checklist.md) - Complete audit checklist
