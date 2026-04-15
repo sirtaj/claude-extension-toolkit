@@ -22,12 +22,30 @@ from pathlib import Path
 from typing import Optional
 
 
+def _check_reserved_name(name: str) -> None:
+    """Raise ValueError if name is reserved per data/version-manifest.json."""
+    manifest_path = Path(__file__).parent.parent / "data" / "version-manifest.json"
+    try:
+        with open(manifest_path) as f:
+            reserved = set(
+                json.load(f)["schemas"]["marketplace_manifest"]["reserved_names"]
+            )
+    except (OSError, KeyError, json.JSONDecodeError):
+        return  # graceful degradation; validator will still catch
+    if name in reserved:
+        raise ValueError(
+            f"Marketplace name '{name}' is reserved by Anthropic. Choose a different name."
+        )
+
+
 def create_plugin_structure(
     name: str,
     output_dir: Path,
     description: str = "",
     author_name: str = "",
     author_email: str = "",
+    marketplace: str = "standalone",
+    marketplace_name: str = "",
 ) -> Path:
     """Create plugin directory structure."""
     plugin_dir = output_dir / name
@@ -123,6 +141,27 @@ MIT
 """
     (plugin_dir / "README.md").write_text(readme_content)
 
+    if marketplace == "standalone":
+        mk_name = marketplace_name or name
+        _check_reserved_name(mk_name)
+        mk = {
+            "name": mk_name,
+            "owner": {"name": author_name} if author_name else {"name": name},
+            "plugins": [
+                {
+                    "name": name,
+                    "source": "./",
+                    "description": description or f"{name} plugin for Claude Code",
+                    "version": "1.0.0",
+                }
+            ],
+        }
+        if author_email and author_name:
+            mk["owner"]["email"] = author_email
+        with open(plugin_dir / ".claude-plugin" / "marketplace.json", "w") as f:
+            json.dump(mk, f, indent=2)
+            f.write("\n")
+
     return plugin_dir
 
 
@@ -135,6 +174,17 @@ def main():
     parser.add_argument("--description", "-d", default="", help="Plugin description")
     parser.add_argument("--author", default="", help="Author name")
     parser.add_argument("--email", default="", help="Author email")
+    parser.add_argument(
+        "--marketplace",
+        choices=["standalone", "none"],
+        default="standalone",
+        help="Auto-create marketplace.json at plugin root (standalone, default) or skip (none)",
+    )
+    parser.add_argument(
+        "--marketplace-name",
+        default="",
+        help="Marketplace name for standalone layout (default: plugin name)",
+    )
 
     args = parser.parse_args()
 
@@ -158,12 +208,18 @@ def main():
             description=args.description,
             author_name=args.author,
             author_email=args.email,
+            marketplace=args.marketplace,
+            marketplace_name=args.marketplace_name,
         )
         print(f"Created plugin at: {plugin_dir}")
         print("\nNext steps:")
         print(f"  1. cd {plugin_dir}")
         print("  2. Edit skills/, commands/, or agents/")
         print(f"  3. Test with: claude --plugin-dir {plugin_dir}")
+        if args.marketplace == "standalone":
+            mk_name = args.marketplace_name or args.name
+            print(f"  4. /plugin marketplace add {plugin_dir}")
+            print(f"  5. /plugin install {args.name}@{mk_name}")
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
