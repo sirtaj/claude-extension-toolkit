@@ -115,13 +115,31 @@ def parse_frontmatter(content: str) -> Tuple[Optional[dict], str]:
     frontmatter_text = parts[1].strip()
     body = parts[2]
 
-    # Simple YAML parsing (key: value)
+    # Simple YAML parsing (key: value) with block scalar support
     frontmatter = {}
     current_key = None
     current_list = None
+    block_scalar = False  # True when accumulating a | or > block
+    block_lines = []
 
-    for line in frontmatter_text.split("\n"):
+    lines = frontmatter_text.split("\n")
+    for i, line in enumerate(lines):
         stripped = line.strip()
+
+        # Accumulate block scalar lines (indented continuation)
+        if block_scalar:
+            if line and (line[0] == " " or line[0] == "\t"):
+                block_lines.append(stripped)
+                continue
+            elif not stripped:
+                block_lines.append("")
+                continue
+            else:
+                # End of block — flush
+                frontmatter[current_key] = "\n".join(block_lines).strip()
+                block_scalar = False
+                block_lines = []
+
         if not stripped or stripped.startswith("#"):
             continue
 
@@ -141,7 +159,10 @@ def parse_frontmatter(content: str) -> Tuple[Optional[dict], str]:
             current_key = key
             current_list = None
 
-            if value:
+            if value in ("|", ">", "|+", "|-", ">+", ">-"):
+                block_scalar = True
+                block_lines = []
+            elif value:
                 # Handle quoted strings
                 if value.startswith('"') and value.endswith('"'):
                     value = value[1:-1]
@@ -153,6 +174,10 @@ def parse_frontmatter(content: str) -> Tuple[Optional[dict], str]:
                 elif value.lower() == "false":
                     value = False
                 frontmatter[key] = value
+
+    # Flush any trailing block scalar
+    if block_scalar and block_lines:
+        frontmatter[current_key] = "\n".join(block_lines).strip()
 
     return frontmatter, body
 
