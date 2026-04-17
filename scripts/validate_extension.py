@@ -321,6 +321,38 @@ def validate_plugin(path: Path) -> ValidationResult:
     if "description" not in manifest:
         result.warnings.append("Missing 'description' in plugin.json - recommended for discoverability")
 
+    # Validate author field type (must be object with "name", not a string)
+    if "author" in manifest:
+        author = manifest["author"]
+        if isinstance(author, str):
+            result.errors.append(
+                f"'author' must be an object with 'name' key, not a string. "
+                f"Use: {{\"name\": \"{author}\"}}"
+            )
+        elif isinstance(author, dict):
+            if "name" not in author:
+                result.errors.append("'author' object missing required 'name' field")
+        else:
+            result.errors.append("'author' must be an object with 'name' key")
+
+    # Warn on component path listings — Claude Code discovers these by directory convention
+    _COMPONENT_PATH_FIELDS = {"skills", "agents", "commands"}
+    for field_name in _COMPONENT_PATH_FIELDS:
+        if field_name in manifest:
+            val = manifest[field_name]
+            if isinstance(val, list) and val and isinstance(val[0], str):
+                result.errors.append(
+                    f"'{field_name}' should not list paths in plugin.json — "
+                    f"Claude Code auto-discovers the {field_name}/ directory"
+                )
+
+    # Warn on hooks as string reference (should be in settings.json, not manifest)
+    if "hooks" in manifest and isinstance(manifest["hooks"], str):
+        result.errors.append(
+            "'hooks' must not be a file path string in plugin.json — "
+            "configure hooks in settings.json or .claude/settings.local.json"
+        )
+
     # Check bundled components exist
     for component in ["skills", "commands", "agents", "hooks"]:
         component_dir = path / component

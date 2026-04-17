@@ -76,7 +76,7 @@ Variables available in skill content:
 
 ### Dynamic Context Injection
 
-Use `` !`command` `` to inject dynamic content:
+Prefix a backtick-wrapped shell command with `!` to inject dynamic content:
 
 ```yaml
 ---
@@ -226,7 +226,7 @@ Commands are invoked explicitly with `/command-name`, so they don't need trigger
 | `name` | Yes | string | Plugin identifier |
 | `description` | Yes | string | What the plugin provides |
 | `version` | No | string | Semantic version |
-| `author` | No | object | Name and email |
+| `author` | No | object | `{"name": "...", "email": "..."}` — must be object, not string |
 | `keywords` | No | list | Discovery tags |
 | `repository` | No | string | Source URL |
 | `license` | No | string | License identifier |

@@ -93,7 +93,7 @@ Essential workflow:
 
 **Name rules:** Max 64 chars, lowercase letters/numbers/hyphens only.
 
-**Dynamic context:** Use `` !`command` `` to inject runtime data into skills.
+**Dynamic context:** Prefix a backtick-wrapped shell command with `!` to inject runtime data into skills (e.g., `!` + `` `date` ``).
 
 **Anti-pattern:** Avoid offering menus or lists of options in skill output. Skills should take action based on context, not present choices.
 
@@ -176,7 +176,7 @@ my-plugin/
 └── README.md
 ```
 
-**plugin.json:**
+**plugin.json** (metadata only — Claude Code discovers components by directory convention):
 ```json
 {
   "name": "my-plugin",
@@ -186,6 +186,11 @@ my-plugin/
   "keywords": ["domain", "feature"]
 }
 ```
+
+**Common mistakes — do NOT add these to plugin.json:**
+- `"author": "Name"` — must be an object: `{"name": "Name"}`
+- `"skills": [...]`, `"agents": [...]`, `"commands": [...]` — component paths don't belong here; Claude Code auto-discovers `skills/`, `agents/`, `commands/` directories
+- `"hooks": "hooks-config.json"` — hooks go in `settings.json` or `.claude/settings.local.json`, not in the manifest
 
 **Development workflow:**
 ```bash

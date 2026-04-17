@@ -38,7 +38,7 @@
         "${CLAUDE_SESSION_ID}",
         "${CLAUDE_SKILL_DIR}"
       ],
-      "dynamic_context": "!`command`"
+      "dynamic_context": "! followed by shell command in backticks"
     },
     "agent_frontmatter": {
       "required": [
