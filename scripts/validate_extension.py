@@ -82,12 +82,12 @@ else:
     VALID_HOOK_EVENTS = list(_HOOKS_EVENTS.keys())
 
 VALID_AGENT_COLORS = _HOOKS_SCHEMA.get(
-    "valid_colors", ["blue", "cyan", "green", "yellow", "magenta", "red"]
+    "valid_colors", ["red", "blue", "green", "yellow", "purple", "orange", "pink", "cyan"]
 )
 VALID_MODELS = _HOOKS_SCHEMA.get(
     "valid_models", ["sonnet", "opus", "haiku"]
 )
-VALID_HOOK_TYPES = ["command", "prompt", "agent"]
+VALID_HOOK_TYPES = ["command", "http", "mcp_tool", "prompt", "agent"]
 
 
 @dataclass
@@ -206,7 +206,7 @@ def validate_skill(path: Path) -> ValidationResult:
 
     # Validate description length if present
     desc = frontmatter.get("description", "")
-    if isinstance(desc, str) and len(desc) > 500:
+    if isinstance(desc, str) and len(desc) > 1536:
         result.warnings.append(f"Description is long ({len(desc)} chars), consider shortening")
 
     # Check for references directory
@@ -451,6 +451,14 @@ def _validate_single_hook(handler: dict, event: str, result: ValidationResult) -
     elif hook_type in ("prompt", "agent"):
         if "prompt" not in handler:
             result.errors.append(f"Hook handler missing 'prompt' in '{event}'")
+    elif hook_type == "http":
+        if "url" not in handler:
+            result.errors.append(f"Hook handler missing 'url' in '{event}'")
+    elif hook_type == "mcp_tool":
+        if "server" not in handler:
+            result.errors.append(f"Hook handler missing 'server' in '{event}'")
+        if "tool" not in handler:
+            result.errors.append(f"Hook handler missing 'tool' in '{event}'")
 
     # Validate model if specified
     if "model" in handler:

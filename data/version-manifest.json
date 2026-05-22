@@ -1,7 +1,7 @@
 {
-  "manifest_version": "1.2",
-  "claude_code_version": "2.1.77",
-  "last_docs_sync": "2026-04-15T20:17:40.466496Z",
+  "manifest_version": "1.3",
+  "claude_code_version": "2.1.141",
+  "last_docs_sync": "2026-05-22T05:42:49.867845Z",
   "schemas": {
     "skill_frontmatter": {
       "required": [],
@@ -11,14 +11,19 @@
       "optional": [
         "name",
         "description",
+        "when_to_use",
         "allowed-tools",
         "model",
+        "effort",
         "context",
         "agent",
         "hooks",
         "argument-hint",
+        "arguments",
         "disable-model-invocation",
-        "user-invocable"
+        "user-invocable",
+        "paths",
+        "shell"
       ],
       "validation": {
         "name": {
@@ -27,15 +32,18 @@
           "description": "lowercase letters, numbers, hyphens only"
         },
         "description": {
-          "max_length": 1024,
-          "no_xml_tags": true
+          "max_length": 1536,
+          "no_xml_tags": true,
+          "note": "Combined description + when_to_use capped at 1536 chars"
         }
       },
       "variables": [
         "$ARGUMENTS",
         "$ARGUMENTS[N]",
         "$N",
+        "$name",
         "${CLAUDE_SESSION_ID}",
+        "${CLAUDE_EFFORT}",
         "${CLAUDE_SKILL_DIR}"
       ],
       "dynamic_context": "! followed by shell command in backticks"
@@ -49,6 +57,7 @@
         "tools",
         "disallowedTools",
         "model",
+        "effort",
         "color",
         "hooks",
         "permissionMode",
@@ -57,7 +66,8 @@
         "mcpServers",
         "memory",
         "background",
-        "isolation"
+        "isolation",
+        "initialPrompt"
       ],
       "plugin_restrictions": {
         "not_supported": [
@@ -233,9 +243,22 @@
             "compact"
           ]
         },
+        "Setup": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": [
+            "init",
+            "maintenance"
+          ]
+        },
         "UserPromptSubmit": {
           "can_block": true,
           "has_matcher": false
+        },
+        "UserPromptExpansion": {
+          "can_block": true,
+          "has_matcher": true,
+          "matcher_values": "command_name"
         },
         "PreToolUse": {
           "can_block": true,
@@ -244,6 +267,11 @@
         },
         "PermissionRequest": {
           "can_block": true,
+          "has_matcher": true,
+          "matcher_values": "tool_name"
+        },
+        "PermissionDenied": {
+          "can_block": false,
           "has_matcher": true,
           "matcher_values": "tool_name"
         },
@@ -257,6 +285,10 @@
           "has_matcher": true,
           "matcher_values": "tool_name"
         },
+        "PostToolBatch": {
+          "can_block": true,
+          "has_matcher": false
+        },
         "Notification": {
           "can_block": false,
           "has_matcher": true,
@@ -264,7 +296,9 @@
             "permission_prompt",
             "idle_prompt",
             "auth_success",
-            "elicitation_dialog"
+            "elicitation_dialog",
+            "elicitation_complete",
+            "elicitation_response"
           ]
         },
         "SubagentStart": {
@@ -277,12 +311,78 @@
           "has_matcher": true,
           "matcher_values": "agent_type"
         },
+        "TaskCreated": {
+          "can_block": true,
+          "has_matcher": false
+        },
+        "TaskCompleted": {
+          "can_block": true,
+          "has_matcher": false
+        },
         "Stop": {
           "can_block": true,
           "has_matcher": false
         },
-        "PreCompact": {
+        "StopFailure": {
           "can_block": false,
+          "has_matcher": true,
+          "matcher_values": [
+            "rate_limit",
+            "authentication_failed",
+            "oauth_org_not_allowed",
+            "billing_error",
+            "invalid_request",
+            "model_not_found",
+            "server_error",
+            "max_output_tokens",
+            "unknown"
+          ]
+        },
+        "TeammateIdle": {
+          "can_block": true,
+          "has_matcher": false
+        },
+        "InstructionsLoaded": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": [
+            "session_start",
+            "nested_traversal",
+            "path_glob_match",
+            "include",
+            "compact"
+          ]
+        },
+        "ConfigChange": {
+          "can_block": true,
+          "has_matcher": true,
+          "matcher_values": [
+            "user_settings",
+            "project_settings",
+            "local_settings",
+            "policy_settings",
+            "skills"
+          ]
+        },
+        "CwdChanged": {
+          "can_block": false,
+          "has_matcher": false
+        },
+        "FileChanged": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": "filename_literal"
+        },
+        "WorktreeCreate": {
+          "can_block": true,
+          "has_matcher": false
+        },
+        "WorktreeRemove": {
+          "can_block": false,
+          "has_matcher": false
+        },
+        "PreCompact": {
+          "can_block": true,
           "has_matcher": true,
           "matcher_values": [
             "manual",
@@ -297,63 +397,26 @@
             "auto"
           ]
         },
+        "Elicitation": {
+          "can_block": true,
+          "has_matcher": true,
+          "matcher_values": "mcp_server_name"
+        },
+        "ElicitationResult": {
+          "can_block": true,
+          "has_matcher": true,
+          "matcher_values": "mcp_server_name"
+        },
         "SessionEnd": {
           "can_block": false,
           "has_matcher": true,
           "matcher_values": [
             "clear",
+            "resume",
             "logout",
             "prompt_input_exit",
             "bypass_permissions_disabled",
             "other"
-          ]
-        },
-        "TeammateIdle": {
-          "can_block": true,
-          "has_matcher": false
-        },
-        "TaskCompleted": {
-          "can_block": true,
-          "has_matcher": false
-        },
-        "InstructionsLoaded": {
-          "can_block": false,
-          "has_matcher": false
-        },
-        "ConfigChange": {
-          "can_block": true,
-          "has_matcher": true,
-          "matcher_values": [
-            "user_settings",
-            "project_settings",
-            "local_settings",
-            "policy_settings",
-            "skills"
-          ]
-        },
-        "WorktreeCreate": {
-          "can_block": true,
-          "has_matcher": false
-        },
-        "WorktreeRemove": {
-          "can_block": false,
-          "has_matcher": false
-        },
-        "Elicitation": {
-          "can_block": true,
-          "has_matcher": false
-        },
-        "ElicitationResult": {
-          "can_block": true,
-          "has_matcher": false
-        },
-        "Setup": {
-          "can_block": false,
-          "has_matcher": true,
-          "matcher_values": [
-            "--init",
-            "--init-only",
-            "--maintenance"
           ]
         }
       },
@@ -361,15 +424,35 @@
         "type": {
           "values": [
             "command",
+            "http",
+            "mcp_tool",
             "prompt",
-            "agent",
-            "http"
+            "agent"
           ],
           "required": false,
           "default": "command"
         },
         "command": {
           "required_for": "command"
+        },
+        "args": {
+          "type": "array",
+          "used_by": "command",
+          "description": "Argument list (enables exec form, no shell)"
+        },
+        "async": {
+          "type": "boolean",
+          "used_by": "command"
+        },
+        "asyncRewake": {
+          "type": "boolean",
+          "used_by": "command",
+          "description": "Run in background, wake Claude on exit 2"
+        },
+        "shell": {
+          "values": ["bash", "powershell"],
+          "used_by": "command",
+          "default": "bash"
         },
         "prompt": {
           "required_for": [
@@ -389,16 +472,37 @@
           "used_by": "http",
           "description": "Environment variables to include in request"
         },
+        "server": {
+          "required_for": "mcp_tool",
+          "description": "Name of a configured MCP server"
+        },
+        "tool": {
+          "required_for": "mcp_tool",
+          "description": "Tool name to call"
+        },
+        "input": {
+          "type": "object",
+          "used_by": "mcp_tool",
+          "description": "Arguments with ${path} substitution from hook input"
+        },
+        "if": {
+          "type": "string",
+          "description": "Permission rule syntax filter (only for tool events)"
+        },
         "timeout": {
-          "type": "number"
+          "type": "number",
+          "defaults": {
+            "command": 600,
+            "http": 600,
+            "mcp_tool": 600,
+            "prompt": 30,
+            "agent": 60
+          }
         },
         "statusMessage": {
           "type": "string"
         },
         "once": {
-          "type": "boolean"
-        },
-        "async": {
           "type": "boolean"
         },
         "model": {
@@ -416,17 +520,19 @@
         "haiku"
       ],
       "valid_model_ids": [
-        "claude-opus-4-6",
+        "claude-opus-4-7",
         "claude-sonnet-4-6",
         "claude-haiku-4-5-20251001"
       ],
       "valid_colors": [
+        "red",
         "blue",
-        "cyan",
         "green",
         "yellow",
-        "magenta",
-        "red"
+        "purple",
+        "orange",
+        "pink",
+        "cyan"
       ],
       "plugin_format": {
         "requires_hooks_wrapper": true,
@@ -437,6 +543,7 @@
       "values": [
         "default",
         "acceptEdits",
+        "auto",
         "dontAsk",
         "bypassPermissions",
         "plan"
@@ -444,6 +551,7 @@
       "descriptions": {
         "default": "Standard permission prompts",
         "acceptEdits": "Auto-approve file edits, prompt for others",
+        "auto": "AI-driven permission decisions",
         "dontAsk": "Auto-approve most actions",
         "bypassPermissions": "Skip all permission prompts (dangerous)",
         "plan": "Require plan approval before execution"
@@ -456,7 +564,7 @@
         "haiku"
       ],
       "full_ids": [
-        "claude-opus-4-6",
+        "claude-opus-4-7",
         "claude-sonnet-4-6",
         "claude-haiku-4-5-20251001"
       ],

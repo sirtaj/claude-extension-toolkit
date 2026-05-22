@@ -212,15 +212,21 @@ Auto-generated from version manifest. Last updated: {timestamp}
 """
 
     # Build events table
-    events = manifest.get("schemas", {}).get("hooks", {}).get("events", [])
+    events = manifest.get("schemas", {}).get("hooks", {}).get("events", {})
     events_table = ""
-    blocking_events = {"PreToolUse", "PermissionRequest", "Stop", "UserPromptSubmit"}
-    matcher_events = {"PreToolUse", "PostToolUse", "PostToolUseFailure"}
 
-    for event in events:
-        can_block = "Yes" if event in blocking_events else "No"
-        has_matcher = "Yes" if event in matcher_events else "No"
-        events_table += f"| {event} | See docs | {can_block} | {has_matcher} |\n"
+    if isinstance(events, dict):
+        for event, details in events.items():
+            if isinstance(details, dict):
+                can_block = "Yes" if details.get("can_block") else "No"
+                has_matcher = "Yes" if details.get("has_matcher") else "No"
+            else:
+                can_block = "No"
+                has_matcher = "No"
+            events_table += f"| {event} | See docs | {can_block} | {has_matcher} |\n"
+    elif isinstance(events, list):
+        for event in events:
+            events_table += f"| {event} | See docs | See docs | See docs |\n"
 
     content = content.format(
         timestamp=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),

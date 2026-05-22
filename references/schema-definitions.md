@@ -1,6 +1,6 @@
 # Schema Definitions
 
-Auto-generated from version manifest. Last updated: 2026-04-15T20:24:29.150390Z
+Auto-generated from version manifest. Last updated: 2026-05-22T06:01:46.454175Z
 
 ## Skill Frontmatter
 
@@ -35,28 +35,35 @@ Auto-generated from version manifest. Last updated: 2026-04-15T20:24:29.150390Z
 
 | Event | When | Can Block | Has Matcher |
 |-------|------|-----------|-------------|
-| SessionStart | See docs | No | No |
+| SessionStart | See docs | No | Yes |
+| Setup | See docs | No | Yes |
 | UserPromptSubmit | See docs | Yes | No |
+| UserPromptExpansion | See docs | Yes | Yes |
 | PreToolUse | See docs | Yes | Yes |
-| PermissionRequest | See docs | Yes | No |
+| PermissionRequest | See docs | Yes | Yes |
+| PermissionDenied | See docs | No | Yes |
 | PostToolUse | See docs | No | Yes |
 | PostToolUseFailure | See docs | No | Yes |
-| Notification | See docs | No | No |
-| SubagentStart | See docs | No | No |
-| SubagentStop | See docs | No | No |
+| PostToolBatch | See docs | Yes | No |
+| Notification | See docs | No | Yes |
+| SubagentStart | See docs | No | Yes |
+| SubagentStop | See docs | Yes | Yes |
+| TaskCreated | See docs | Yes | No |
+| TaskCompleted | See docs | Yes | No |
 | Stop | See docs | Yes | No |
-| PreCompact | See docs | No | No |
-| PostCompact | See docs | No | No |
-| SessionEnd | See docs | No | No |
-| TeammateIdle | See docs | No | No |
-| TaskCompleted | See docs | No | No |
-| InstructionsLoaded | See docs | No | No |
-| ConfigChange | See docs | No | No |
-| WorktreeCreate | See docs | No | No |
+| StopFailure | See docs | No | Yes |
+| TeammateIdle | See docs | Yes | No |
+| InstructionsLoaded | See docs | No | Yes |
+| ConfigChange | See docs | Yes | Yes |
+| CwdChanged | See docs | No | No |
+| FileChanged | See docs | No | Yes |
+| WorktreeCreate | See docs | Yes | No |
 | WorktreeRemove | See docs | No | No |
-| Elicitation | See docs | No | No |
-| ElicitationResult | See docs | No | No |
-| Setup | See docs | No | No |
+| PreCompact | See docs | Yes | Yes |
+| PostCompact | See docs | No | Yes |
+| Elicitation | See docs | Yes | Yes |
+| ElicitationResult | See docs | Yes | Yes |
+| SessionEnd | See docs | No | Yes |
 
 
 ## Plugin Manifest (plugin.json)
