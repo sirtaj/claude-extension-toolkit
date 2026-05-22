@@ -60,4 +60,4 @@ python3 scripts/marketplace_register.py new-plugin \
 
 - Schema: [`../../../references/marketplace-schema.md`](../../../references/marketplace-schema.md)
 - CLI / auth / caching: [`../../../references/marketplaces.md`](../../../references/marketplaces.md)
-- Validator: `scripts/marketplace_manager.py validate <marketplace-root>` (see `extension-optimizer` skill)
+- Validator: `${CLAUDE_PLUGIN_ROOT}/scripts/marketplace_manager.py validate <marketplace-root>`

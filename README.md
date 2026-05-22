@@ -1,6 +1,6 @@
 # Claude Extension Toolkit
 
-A self-maintaining toolkit for creating Claude Code extensions. Provides workflow-based skills for building, configuring, and maintaining skills, agents, plugins, and hooks.
+A plugin that helps you build Claude Code extensions — skills, agents, commands, hooks, and plugins.
 
 ## Installation
 
@@ -12,219 +12,125 @@ A self-maintaining toolkit for creating Claude Code extensions. Provides workflo
 claude --plugin-dir ./claude-extension-toolkit
 ```
 
-## Marketplace Support
+## Usage
 
-Plugins built with this toolkit are consumable via Claude Code's local marketplace system. Two layouts are supported:
+Once installed, just describe what you want. The toolkit activates automatically.
 
-### Standalone (flat)
+**Creating extensions:**
+- "Create a skill that helps with database migrations"
+- "Build an agent that reviews PRs"
+- "Make a command that runs my deploy script"
+- "Add a hook that lints Python files on save"
+- "Scaffold a plugin for my team's workflow"
 
-One plugin directory that is also its own single-entry marketplace. Fastest path to installable.
+**Debugging:**
+- "My skill isn't activating, help me debug it"
+- "Why isn't this hook firing?"
 
-```
-my-plugin/
-└── .claude-plugin/
-    ├── plugin.json
-    └── marketplace.json   # auto-created by extension-builder
-```
+**Auditing (spawns autonomous agent):**
+- "Audit all my extensions for deprecated patterns"
+- "Check my plugins for schema issues"
+- "Migrate my hooks to the new format"
 
-Install:
-```bash
-/plugin marketplace add ./my-plugin
-/plugin install my-plugin@my-plugin
-```
+**Syncing schemas:**
+- `/extension-sync` — fetches latest Claude Code docs and checks your extensions against them
 
-The toolkit's `extension-builder` scaffolds standalone layouts by default — the generated plugin is installable immediately with no extra wiring.
+## How It Works
 
-### Umbrella (aggregating)
+| Component | Type | What it does |
+|-----------|------|--------------|
+| `extension-toolkit` | Skill | Interactive creation, configuration, and debugging |
+| `extension-auditor` | Agent | Autonomous batch audit, validation, and migration |
+| `/extension-sync` | Command | Pulls latest schemas, reports what changed |
 
-One marketplace directory containing N plugin subdirs. Ideal when shipping a related plugin set.
+The skill handles interactive work — it asks questions, scaffolds files, and helps you iterate. When you ask for bulk operations across many extensions, it spawns the auditor agent autonomously.
 
-```
-my-marketplace/
-├── .claude-plugin/marketplace.json   # aggregates plugin-a, plugin-b
-├── plugin-a/.claude-plugin/plugin.json
-└── plugin-b/.claude-plugin/plugin.json
-```
+## Plugin Marketplace
 
-Install:
-```bash
-/plugin marketplace add ./my-marketplace
-/plugin install plugin-a@my-marketplace
-```
+Plugins you create can be distributed via Claude Code's marketplace system. Two layouts:
 
-When you scaffold a new plugin inside an umbrella, `extension-builder` detects the ancestor marketplace.json via upward search and registers the new plugin into it — no inner marketplace.json is created.
+- **Standalone** — single plugin that's its own marketplace (default, simplest)
+- **Umbrella** — parent directory aggregating multiple plugins
 
-### The one-level invariant
+The skill handles marketplace wiring during scaffolding. See `references/marketplaces.md` for full details.
 
-`marketplace.json` lives at exactly one level per tree — either the plugin root (standalone) or the umbrella root (umbrella), never both. Promotion (standalone → umbrella) is a separate migration flow, not yet automated; see `.planning/seeds/marketplace-promotion-flow.md`.
+---
 
-### Schema reference
+## For Developers
 
-Full schema, source types, reserved names, and pitfalls: [`references/marketplace-schema.md`](references/marketplace-schema.md)
-Companion CLI/auth/caching reference: [`references/marketplaces.md`](references/marketplaces.md)
+Everything below is for people working on or extending this toolkit.
 
-## Skills
+### Design
 
-### `/extension-starter` - Entry Point
+- One skill handles all interactive extension work (create, configure, debug)
+- Autonomous bulk work (audit, migrate, validate-all) goes to the agent
+- Script-running with no interactivity is a command
+- References are shared at the plugin root, not duplicated per-skill
+- The skill dispatches to the agent when the user asks for batch operations
 
-Guides extension type decisions and provides quick-start templates.
-
-**Use when:** Starting customization, deciding what to build, need a quick template.
-
-```
-What do you need?
-├─ Slash command or expertise? ────► SKILL (also creates /commands)
-├─ Autonomous work? ──────────────► AGENT
-├─ Coordinated agents? ──────────► AGENT TEAMS
-├─ Always-on behavior? ──────────► HOOKS
-├─ Project context? ─────────────► CLAUDE.md
-└─ Shareable package? ───────────► PLUGIN
-```
-
-> **Note:** Commands have been merged into skills. Both `commands/foo.md` and
-> `skills/foo/SKILL.md` create `/foo`. Prefer skills for new development.
-
-### `/extension-builder` - Create Extensions
-
-Detailed guidance for creating any extension type with proper structure and frontmatter.
-
-**Use when:** Building skills, agents, or plugins.
-
-- Extension types: skills, agents, agent teams, plugins
-- Frontmatter reference and templates
-- Progressive disclosure patterns
-- Plugin lifecycle and marketplace integration
-
-### `/extension-rules` - Configure Behavior
-
-Configure Claude Code via CLAUDE.md, hooks, and settings.
-
-**Use when:** Adding project rules, creating hooks, configuring permissions.
-
-- CLAUDE.md patterns and best practices
-- Hook setup and common patterns
-- Settings and permissions configuration
-
-### `/extension-optimizer` - Maintain Extensions
-
-Validate, audit, and upgrade existing extensions.
-
-**Use when:** Auditing extensions, checking for deprecated patterns, optimizing tokens.
-
-- Quick validation with toolkit scripts
-- Deprecated pattern detection
-- Token efficiency analysis
-- Upgrade workflow with before/after examples
-
-### `/extension-sync` - Stay Current
-
-Sync with Claude Code documentation and update schema definitions.
-
-**Use when:** Checking for updates, syncing docs, after Claude Code updates.
-
-- Canonical documentation fetching
-- Version manifest management
-- Schema definition updates
-
-## Shared References
-
-The toolkit includes shared reference files used by all skills:
-
-| Reference | Purpose |
-|-----------|---------|
-| `frontmatter.md` | All frontmatter fields for skills, agents, plugins |
-| `templates.md` | Ready-to-use templates for all extension types |
-| `locations.md` | Storage locations and priority order |
-| `tools.md` | Tool restrictions and permission patterns |
-| `hooks.md` | Complete hooks reference with JSON input schemas |
-| `marketplaces.md` | Marketplace schema, source types, settings, CLI |
-| `schema-definitions.md` | Current schemas (auto-updated by sync) |
-
-## Development
-
-```bash
-# Load plugin for testing
-claude --plugin-dir ./claude-extension-toolkit
-
-# Reload plugins without restarting
-/reload-plugins
-```
-
-## Scripts
-
-Utility scripts for extension management:
-
-```bash
-cd ~/.claude/plugins/claude-extension-toolkit
-
-# Validate extension structure
-scripts/validate_extension.py <path>
-scripts/validate_extension.py --all
-
-# Detect deprecated patterns
-scripts/pattern_detector.py <path>
-
-# Count tokens
-scripts/token_counter.py <path> --verbose
-
-# Manage marketplace
-scripts/marketplace_manager.py list <marketplace-path>
-
-# Scaffold new plugin
-scripts/plugin_scaffolder.py my-plugin --output ./
-
-# Sync documentation
-scripts/docs_fetcher.py sync
-```
-
-## Architecture
+### Architecture
 
 ```
 claude-extension-toolkit/
-├── .claude-plugin/plugin.json      # Plugin manifest
-├── skills/
-│   ├── extension-starter/          # Decision & quick-start
-│   ├── extension-builder/          # Create extensions
-│   ├── extension-rules/            # Configure behavior
-│   ├── extension-optimizer/        # Maintain & upgrade
-│   └── extension-sync/             # Docs & version tracking
-├── references/                     # Shared by all skills
-│   ├── frontmatter.md
-│   ├── templates.md
-│   ├── locations.md
-│   ├── tools.md
-│   ├── hooks.md
-│   └── schema-definitions.md
-├── data/
-│   ├── version-manifest.json       # Schema versions, deprecations
-│   └── canonical-sources.json      # Documentation URLs
-└── scripts/
-    ├── validate_extension.py
-    ├── pattern_detector.py
-    ├── token_counter.py
-    ├── docs_fetcher.py
-    ├── marketplace_manager.py
-    └── plugin_scaffolder.py
+├── skills/extension-toolkit/    # Interactive skill
+│   ├── SKILL.md
+│   └── references/
+├── agents/extension-auditor.md  # Autonomous agent
+├── commands/extension-sync.md   # Sync command
+├── references/                  # Shared docs (loaded on demand)
+├── scripts/                     # Python validation tools
+└── data/                        # Version manifest, source URLs
 ```
 
-## Self-Maintenance
+### Reference Documentation
 
-The toolkit maintains itself by:
+Bundled docs loaded on demand (no context cost until needed):
 
-1. **Schema tracking** - Version manifest tracks current Claude Code schemas
-2. **Pattern detection** - Detects deprecated patterns in extensions
-3. **Doc syncing** - Fetches canonical documentation on demand
-4. **Upgrade guidance** - Provides before/after migration examples
+| File | Contents |
+|------|----------|
+| `references/frontmatter.md` | All frontmatter fields for skills, agents, commands |
+| `references/hooks.md` | Hook events, JSON input schemas, exit codes |
+| `references/templates.md` | Ready-to-use templates for each extension type |
+| `references/tools.md` | Tool restriction patterns and permission config |
+| `references/locations.md` | Where to put files, priority order |
+| `references/marketplaces.md` | Marketplace CLI, auth, caching |
+| `references/marketplace-schema.md` | Full marketplace.json schema |
+| `references/migrations.md` | Before/after patterns for deprecated APIs |
+| `references/schema-definitions.md` | Current Claude Code schemas (auto-updated by sync) |
+| `references/example-agent.md` | Working agent example |
 
-## Version
+### Scripts
 
-- Toolkit version: 3.0.0
-- Synced against: Claude Code v2.1.77
-- Last sync: 2026-03-17
+Python scripts invoked by the skill and agent. Can also be run directly:
 
-## Credits
+| Script | Purpose | Example |
+|--------|---------|---------|
+| `validate_extension.py` | Structure/schema validation | `--all` or `<path>` |
+| `pattern_detector.py` | Deprecated pattern detection | `--all` or `<path>` |
+| `token_counter.py` | Token budget checking | `--all --top 10` |
+| `lint_references.py` | Broken reference link detection | (no args) |
+| `docs_fetcher.py` | Fetch canonical docs, update schemas | `sync` or `update-schemas` |
+| `marketplace_manager.py` | Marketplace CRUD and validation | `validate <path>` or `list <path>` |
+| `marketplace_register.py` | Three-flow marketplace registration | `<name> --plugin-path <path>` |
+| `plugin_scaffolder.py` | Plugin directory scaffolding | `<name> --output ./` |
+| `extension_report.py` | Extension inventory report | (no args) |
 
-Created by Sirtaj Singh Kang using Claude Code.
+All Python 3, no external dependencies. Reference via `${CLAUDE_PLUGIN_ROOT}/scripts/` in hooks and skills.
+
+### Development Workflow
+
+```bash
+# Test changes to this plugin
+claude --plugin-dir ./claude-extension-toolkit
+
+# Reload after edits (no restart needed)
+/reload-plugins
+```
+
+### Version
+
+- Toolkit: 4.0.0
+- Synced against: Claude Code v2.1.141
 
 ## License
 
