@@ -69,9 +69,70 @@ def load_deprecations() -> List[dict]:
     return manifest.get("deprecations", [])
 
 
-def check_file(path: Path, deprecations: List[dict]) -> DetectionResult:
-    """Check a file for deprecated patterns."""
+def _is_inside_backticks(line: str, match_start: int, match_end: int) -> bool:
+    """Check if the match position falls inside inline backticks."""
+    in_backtick = False
+    i = 0
+    while i < len(line):
+        if line[i] == '`':
+            if not in_backtick:
+                in_backtick = True
+                start = i
+            else:
+                if start < match_start and i >= match_end:
+                    return True
+                in_backtick = False
+        i += 1
+    return False
+
+
+def _build_fenced_block_set(lines: List[str]) -> set:
+    """Return set of 1-based line numbers that are inside fenced code blocks."""
+    inside = set()
+    in_fence = False
+    for line_num, line in enumerate(lines, 1):
+        stripped = line.lstrip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            if in_fence:
+                inside.add(line_num)
+                in_fence = False
+            else:
+                in_fence = True
+                inside.add(line_num)
+        elif in_fence:
+            inside.add(line_num)
+    return inside
+
+
+def _is_documentation_context(line: str) -> bool:
+    """Detect lines that document patterns rather than use them."""
+    stripped = line.strip()
+    # JSON pattern definitions: "pattern": "..."
+    if re.match(r'^"pattern"\s*:', stripped):
+        return True
+    # Markdown table cells listing deprecated patterns as reference
+    if stripped.startswith("|") and stripped.endswith("|"):
+        return True
+    # Markdown headings describing a migration/pattern
+    if re.match(r'^#{1,6}\s+', stripped):
+        return True
+    # Checklist items describing what to look for
+    if re.match(r'^-\s*\[[ x]\]\s*No\s+`', stripped):
+        return True
+    return False
+
+
+def check_file(path: Path, deprecations: List[dict], strict: bool = False) -> DetectionResult:
+    """Check a file for deprecated patterns.
+
+    Args:
+        strict: If True, disable context-aware filtering (report all matches).
+    """
     result = DetectionResult(str(path))
+
+    # Skip the manifest file itself — it defines the patterns
+    if path.resolve() == MANIFEST_PATH.resolve():
+        return result
 
     try:
         content = path.read_text()
@@ -80,6 +141,8 @@ def check_file(path: Path, deprecations: List[dict]) -> DetectionResult:
         return result
 
     lines = content.split("\n")
+    is_markdown = path.suffix in (".md", ".mdx")
+    fenced_lines = _build_fenced_block_set(lines) if is_markdown and not strict else set()
 
     for deprecation in deprecations:
         pattern = deprecation["pattern"]
@@ -90,21 +153,31 @@ def check_file(path: Path, deprecations: List[dict]) -> DetectionResult:
         try:
             regex = re.compile(pattern, re.IGNORECASE)
         except re.error:
-            # Treat as literal string match
             regex = re.compile(re.escape(pattern), re.IGNORECASE)
 
         for line_num, line in enumerate(lines, 1):
-            if regex.search(line):
-                match = PatternMatch(
-                    file_path=str(path),
-                    line_number=line_num,
-                    line_content=line.strip()[:80],
-                    pattern=pattern,
-                    replacement=replacement,
-                    severity=severity,
-                    since=since,
-                )
-                result.matches.append(match)
+            m = regex.search(line)
+            if not m:
+                continue
+
+            if not strict:
+                if line_num in fenced_lines:
+                    continue
+                if _is_inside_backticks(line, m.start(), m.end()):
+                    continue
+                if _is_documentation_context(line):
+                    continue
+
+            match = PatternMatch(
+                file_path=str(path),
+                line_number=line_num,
+                line_content=line.strip()[:80],
+                pattern=pattern,
+                replacement=replacement,
+                severity=severity,
+                since=since,
+            )
+            result.matches.append(match)
 
     return result
 
@@ -187,6 +260,10 @@ def main():
         "--json", action="store_true",
         help="Output as JSON"
     )
+    parser.add_argument(
+        "--strict", action="store_true",
+        help="Disable context filtering (report all matches including docs/examples)"
+    )
 
     args = parser.parse_args()
 
@@ -200,7 +277,7 @@ def main():
     if args.all:
         files = find_extension_files(CLAUDE_DIR)
         for f in files:
-            results.append(check_file(f, deprecations))
+            results.append(check_file(f, deprecations, strict=args.strict))
     elif args.path:
         path = Path(args.path)
         if not path.exists():
@@ -208,11 +285,11 @@ def main():
             sys.exit(2)
 
         if path.is_file():
-            results.append(check_file(path, deprecations))
+            results.append(check_file(path, deprecations, strict=args.strict))
         else:
             files = find_extension_files(path)
             for f in files:
-                results.append(check_file(f, deprecations))
+                results.append(check_file(f, deprecations, strict=args.strict))
     else:
         parser.print_help()
         sys.exit(2)
