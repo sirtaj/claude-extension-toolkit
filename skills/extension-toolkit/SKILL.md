@@ -152,15 +152,18 @@ FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 exit 0
 ```
 
-Events: SessionStart, PreToolUse, PostToolUse, Stop, and 18 more — see `references/hooks.md`.
+Handler types: `command`, `http`, `mcp_tool`, `prompt`, `agent`.
+Events: SessionStart, PreToolUse, PostToolUse, Stop, and 27 more — see
+`${CLAUDE_PLUGIN_ROOT}/references/hooks.md`.
 
 ## Creating Plugins
 
 ```
 my-plugin/
 ├── .claude-plugin/
-│   └── plugin.json        # name, description, version, author:{name}
-├── settings.json          # hooks, permissions
+│   └── plugin.json        # optional; only `name` is required
+├── hooks/hooks.json       # hook config
+├── settings.json          # plugin defaults (agent, subagentStatusLine only)
 ├── skills/
 ├── commands/
 ├── agents/
@@ -169,7 +172,9 @@ my-plugin/
 
 Do NOT put `skills`, `agents`, `commands` arrays in plugin.json — Claude Code auto-discovers them.
 
-Development: `claude --plugin-dir ./my-plugin` then `/reload-plugins` for changes.
+Development: `claude --plugin-dir ./my-plugin`. Edits to `SKILL.md` and agent
+files are picked up live; `hooks/`, `.mcp.json`, and `output-styles/` need
+`/reload-plugins`.
 
 For marketplace registration, see `references/marketplace-scaffolding.md`.
 
@@ -179,9 +184,11 @@ When an extension isn't working:
 
 1. **Skill not triggering?**
    - Check `description` contains trigger phrases matching user intent
+   - Put the key use case first: `description` + `when_to_use` is truncated at 1,536 chars in the listing
    - Verify name is valid: `^[a-z0-9-]+$`, max 64 chars
    - Test with explicit `/skill-name` invocation
    - Check for competing skills with overlapping descriptions
+   - Check `paths` isn't scoping it away from the files in play
 
 2. **Agent not spawning?**
    - Verify `<example>` blocks match real usage patterns
@@ -195,9 +202,10 @@ When an extension isn't working:
    - Check exit code behavior (only 2 blocks, 0 allows)
 
 4. **Plugin not loading?**
-   - Run `claude plugin validate ./my-plugin`
-   - Check `.claude-plugin/plugin.json` exists and is valid JSON
+   - Run `claude plugin validate ./my-plugin` (add `--strict` to fail on warnings)
+   - If a `.claude-plugin/plugin.json` exists, check it is valid JSON
    - Verify `author` is `{name: "..."}` not a string
+   - Check components sit at the plugin root, not inside `.claude-plugin/`
 
 ## Additional Resources
 

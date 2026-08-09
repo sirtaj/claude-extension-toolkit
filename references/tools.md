@@ -2,6 +2,12 @@
 
 Built-in tools and restriction patterns for Claude Code extensions.
 
+Verified against Claude Code 2.1.226 docs (2026-08-09).
+Canonical docs: https://code.claude.com/docs/en/tools-reference
+
+Tool names are the exact strings used in permission rules, subagent `tools`
+lists, and hook matchers.
+
 ## Built-in Tools
 
 | Tool | Purpose | Side Effects |
@@ -12,31 +18,49 @@ Built-in tools and restriction patterns for Claude Code extensions.
 | `Glob` | Find files by pattern | None |
 | `Grep` | Search file contents | None |
 | `Bash` | Execute shell commands | Depends on command |
+| `PowerShell` | Execute PowerShell natively | Depends on command |
 | `WebFetch` | Fetch URL content | None |
 | `WebSearch` | Search the web | None |
 | `Agent` | Launch subagents | (formerly Task, still works as alias) |
-| `SendMessage` | Send message to running agent | Agent communication |
+| `SendMessage` | Message a teammate, resumed subagent, or other session | Agent communication |
+| `ListAgents` | List agents reachable via SendMessage | None |
 | `AskUserQuestion` | Interactive prompts | User interaction |
 | `NotebookEdit` | Edit Jupyter notebooks | Modifies notebooks |
-| `CronCreate` | Create scheduled task | Creates cron job |
+| `Monitor` | Run a command in the background, feeding output lines back | Runs command |
+| `Artifact` | Publish an HTML/Markdown file as a claude.ai artifact | Publishes externally |
+| `SendUserFile` | Send session files to the user | Sends externally |
+| `PushNotification` | Desktop notification (and phone push via Remote Control) | Notifies |
+| `EndConversation` | End the session (main conversation only) | Ends session |
+| `CronCreate` | Create scheduled task | Creates session-scoped cron job |
 | `CronDelete` | Delete scheduled task | Removes cron job |
 | `CronList` | List scheduled tasks | None |
+| `RemoteTrigger` | Create/update/run Routines on claude.ai | Modifies remote routines |
+| `ScheduleWakeup` | Reschedule the next self-paced `/loop` iteration | Schedules |
 | `EnterPlanMode` | Switch to plan mode | Mode change |
-| `ExitPlanMode` | Exit plan mode | Mode change |
+| `ExitPlanMode` | Present a plan for approval, exit plan mode | Mode change |
 | `EnterWorktree` | Enter git worktree | Creates worktree |
 | `ExitWorktree` | Exit git worktree | Cleans up worktree |
 | `LSP` | Query language server | None |
 | `Skill` | Invoke a skill | Depends on skill |
-| `TaskCreate` | Create background task | Spawns task |
-| `TaskGet` | Get task status | None |
+| `Workflow` | Run a dynamic workflow orchestrating many subagents | Spawns agents |
+| `ReportFindings` | Report code-review findings as structured data | None |
+| `TaskCreate` | Create a task | Spawns task |
+| `TaskGet` | Get task details | None |
 | `TaskList` | List tasks | None |
-| `TaskOutput` | Read task output | None |
-| `TaskStop` | Stop a task | Stops task |
-| `TaskUpdate` | Update task state | Modifies task |
-| `TodoWrite` | Write todo items | Creates todos |
-| `ToolSearch` | Search available tools | None |
+| `TaskStop` | Stop a running background task or named agent | Stops task |
+| `TaskUpdate` | Update task status/dependencies/details | Modifies task |
+| `ToolSearch` | Search and load deferred tools | None |
+| `WaitForMcpServers` | Wait for MCP servers still connecting | None |
 | `ListMcpResourcesTool` | List MCP resources | None |
 | `ReadMcpResourceTool` | Read MCP resource | None |
+
+**Deprecated / disabled by default:**
+
+| Tool | Status |
+|------|--------|
+| `TodoWrite` | Disabled by default since v2.1.142 in favor of the `Task*` tools |
+| `TaskOutput` | Deprecated in favor of `Read` on the task's output file path |
+| `Task` | Renamed to `Agent` in v2.1.63; still accepted as an alias |
 
 ## Common Restriction Patterns
 
@@ -129,11 +153,22 @@ Use for: offline-only agents, security-sensitive tasks
 Limit which agent types can be spawned:
 
 ```yaml
-allowed-tools:
+tools:
   - Agent(worker, researcher)
 ```
 
-This allows the agent to only spawn `worker` and `researcher` subagent types.
+This allowlist applies **only** to an agent running as the main thread via
+`claude --agent`. In a subagent definition, a bare `Agent` lets it spawn
+subagents while the depth limit allows, and any type list in the parentheses is
+ignored. Omitting `Agent` entirely blocks subagent spawning.
+
+To block specific agents while allowing the rest, use `permissions.deny`.
+
+### Tools Removed from Subagents
+
+Some tools are stripped from every subagent regardless of the `tools` list, and
+background subagents (the default) keep an even smaller built-in set. See
+`references/frontmatter.md` → "Tools Available to Subagents" for both lists.
 
 ## Permission Modes
 
@@ -141,11 +176,17 @@ Used in agent frontmatter `permissionMode`:
 
 | Mode | Behavior |
 |------|----------|
-| `default` | Standard permission prompts |
-| `acceptEdits` | Auto-approve file edits, prompt for others |
-| `dontAsk` | Auto-approve most actions |
-| `bypassPermissions` | Skip all permission prompts (dangerous) |
-| `plan` | Require plan approval before execution |
+| `default` | Standard permission checking with prompts |
+| `manual` | Alias for `default` (2.1.200+) |
+| `acceptEdits` | Auto-accept file edits and common filesystem commands in the working directory |
+| `auto` | A background classifier reviews commands and protected-directory writes |
+| `dontAsk` | Auto-**deny** prompts. Explicitly allowed tools still work |
+| `bypassPermissions` | Skip permission prompts (dangerous) |
+| `plan` | Plan mode: read-only exploration |
+
+A parent using `bypassPermissions` or `acceptEdits` takes precedence and can't
+be overridden by a subagent. Under `auto`, a subagent's `permissionMode` is
+ignored entirely — the classifier evaluates its calls with the parent's rules.
 
 ## Tool Categories
 
@@ -156,25 +197,28 @@ Used in agent frontmatter `permissionMode`:
 - WebFetch, WebSearch
 
 **Execution:**
-- Bash, Agent
+- Bash, PowerShell, Monitor, Agent, Workflow
 
 **Interactive:**
-- AskUserQuestion
+- AskUserQuestion, EndConversation
 
 **Planning:**
-- EnterPlanMode, ExitPlanMode, TodoWrite
+- EnterPlanMode, ExitPlanMode
 
 **Scheduling:**
-- CronCreate, CronDelete, CronList
+- CronCreate, CronDelete, CronList, RemoteTrigger, ScheduleWakeup
 
 **Agent Management:**
-- Agent, SendMessage, TaskCreate, TaskGet, TaskList, TaskOutput, TaskStop, TaskUpdate
+- Agent, SendMessage, ListAgents, TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate
 
 **Worktree:**
 - EnterWorktree, ExitWorktree
 
 **MCP:**
-- ListMcpResourcesTool, ReadMcpResourceTool
+- ListMcpResourcesTool, ReadMcpResourceTool, WaitForMcpServers
+
+**Output / sharing:**
+- Artifact, SendUserFile, PushNotification, ReportFindings
 
 **Discovery:**
 - ToolSearch, Skill, LSP

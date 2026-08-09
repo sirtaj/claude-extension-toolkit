@@ -49,6 +49,36 @@
       "extract": ["marketplace_schema", "publishing_workflow", "discovery"]
     },
     {
+      "id": "plugin_dependencies",
+      "url": "https://code.claude.com/docs/en/plugin-dependencies",
+      "purpose": "Plugin dependency declarations and semver constraints",
+      "extract": ["dependencies_field", "version_constraints"]
+    },
+    {
+      "id": "commands",
+      "url": "https://code.claude.com/docs/en/commands",
+      "purpose": "Built-in and custom slash commands",
+      "extract": ["builtin_commands", "command_frontmatter"]
+    },
+    {
+      "id": "tools_reference",
+      "url": "https://code.claude.com/docs/en/tools-reference",
+      "purpose": "Canonical built-in tool names and per-tool behavior",
+      "extract": ["tool_names", "tool_behavior", "permission_requirements"]
+    },
+    {
+      "id": "permission_modes",
+      "url": "https://code.claude.com/docs/en/permission-modes",
+      "purpose": "Permission mode semantics used by agent frontmatter",
+      "extract": ["permission_modes"]
+    },
+    {
+      "id": "model_config",
+      "url": "https://code.claude.com/docs/en/model-config",
+      "purpose": "Model aliases, full model IDs, effort levels",
+      "extract": ["model_aliases", "model_ids", "effort_levels"]
+    },
+    {
       "id": "agent_teams",
       "url": "https://code.claude.com/docs/en/agent-teams",
       "purpose": "Multi-agent coordination, team patterns",

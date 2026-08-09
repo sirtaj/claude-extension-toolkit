@@ -186,7 +186,7 @@ You are a code review agent. Analyze code quality, patterns, and potential issue
 ```
 my-plugin/
 ├── .claude-plugin/
-│   └── plugin.json
+│   └── plugin.json       # optional; components auto-discover without it
 ├── .claude/
 │   └── settings.local.json
 ├── skills/
@@ -196,11 +196,19 @@ my-plugin/
 │   └── my-command.md
 ├── agents/
 │   └── my-agent.md
+├── workflows/            # workflow scripts
+│   └── release-audit.js
+├── bin/                  # executables added to the Bash tool's PATH
+│   └── my-tool
 ├── hooks/
 │   ├── hooks.json
 │   └── check_script.sh
+├── settings.json         # plugin defaults (agent, subagentStatusLine)
 └── README.md
 ```
+
+Only `plugin.json` lives under `.claude-plugin/`; everything else sits at the
+plugin root. A plugin-root `CLAUDE.md` is **not** loaded as project context.
 
 **plugin.json:**
 ```json
@@ -293,7 +301,8 @@ For shipping plugin defaults (at plugin root, not in `.claude/`):
 }
 ```
 
-**Note:** Currently only the `agent` key is supported in plugin-level settings.json.
+**Note:** Only the `agent` and `subagentStatusLine` keys are honored in
+plugin-level settings.json.
 
 ## LSP Configuration (.lsp.json)
 
@@ -382,7 +391,11 @@ Configure language servers for a plugin:
     "name": "Team Name"
   },
   "plugins": [
-    {"name": "shared-plugin", "source": "github:org/shared-plugins", "description": "Shared tooling", "version": "2.0.0"}
+    {
+      "name": "shared-plugin",
+      "source": {"source": "github", "repo": "org/shared-plugins", "ref": "v2.0.0"},
+      "description": "Shared tooling"
+    }
   ]
 }
 ```

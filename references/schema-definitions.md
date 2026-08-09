@@ -1,85 +1,177 @@
 # Schema Definitions
 
-Auto-generated from version manifest. Last updated: 2026-05-22T06:01:46.454175Z
+Auto-generated from `data/version-manifest.json` by `scripts/docs_fetcher.py update-schemas`. Do not edit by hand.
+
+- Generated: 2026-08-09T18:23:45.682280Z
+- Claude Code version: 2.1.226
+- Last docs sync: 2026-08-09T18:23:45.681263Z
 
 ## Skill Frontmatter
 
-| Field | Required | Type | Description |
-|-------|----------|------|-------------|
-| name | Yes | string | Skill identifier |
-| description | Yes | string | Third-person trigger description |
-| allowed-tools | No | list | Tool restrictions |
-| model | No | enum | sonnet, opus, haiku |
-| context | No | string | Additional context file |
-| agent | No | string | Execute as subagent |
-| hooks | No | object | Skill-scoped hooks |
-| argument-hint | No | string | Argument prompt |
-| disable-model-invocation | No | bool | Require explicit invocation |
-| user-invocable | No | bool | Allow /skill-name |
+| Field | Required |
+|-------|----------|
+| `description` | Recommended |
+| `name` | No |
+| `when_to_use` | No |
+| `argument-hint` | No |
+| `arguments` | No |
+| `disable-model-invocation` | No |
+| `user-invocable` | No |
+| `allowed-tools` | No |
+| `disallowed-tools` | No |
+| `model` | No |
+| `effort` | No |
+| `context` | No |
+| `agent` | No |
+| `background` | No |
+| `hooks` | No |
+| `paths` | No |
+| `shell` | No |
+| `metadata` | No |
+| `license` | No |
+| `compatibility` | No |
 
 ## Agent Frontmatter
 
-| Field | Required | Type | Description |
-|-------|----------|------|-------------|
-| name | Yes | string | Agent identifier (used with Agent tool; Task is a legacy alias) |
-| description | Yes | string | When to use, with <example> blocks |
-| tools | No | list | Allowed tools (default: all) |
-| disallowedTools | No | list | Explicitly denied tools |
-| model | No | enum | sonnet, opus, haiku |
-| color | No | enum | blue, cyan, green, yellow, magenta, red |
-| hooks | No | object | Agent-scoped hooks |
-| permissionMode | No | enum | Permission handling mode |
-| skills | No | list | Preloaded skills |
+| Field | Required |
+|-------|----------|
+| `name` | Yes |
+| `description` | Yes |
+| `tools` | No |
+| `disallowedTools` | No |
+| `model` | No |
+| `effort` | No |
+| `color` | No |
+| `hooks` | No |
+| `permissionMode` | No |
+| `skills` | No |
+| `maxTurns` | No |
+| `mcpServers` | No |
+| `memory` | No |
+| `background` | No |
+| `isolation` | No |
+| `initialPrompt` | No |
 
-## Hook Events
+## Command Frontmatter
 
-| Event | When | Can Block | Has Matcher |
-|-------|------|-----------|-------------|
-| SessionStart | See docs | No | Yes |
-| Setup | See docs | No | Yes |
-| UserPromptSubmit | See docs | Yes | No |
-| UserPromptExpansion | See docs | Yes | Yes |
-| PreToolUse | See docs | Yes | Yes |
-| PermissionRequest | See docs | Yes | Yes |
-| PermissionDenied | See docs | No | Yes |
-| PostToolUse | See docs | No | Yes |
-| PostToolUseFailure | See docs | No | Yes |
-| PostToolBatch | See docs | Yes | No |
-| Notification | See docs | No | Yes |
-| SubagentStart | See docs | No | Yes |
-| SubagentStop | See docs | Yes | Yes |
-| TaskCreated | See docs | Yes | No |
-| TaskCompleted | See docs | Yes | No |
-| Stop | See docs | Yes | No |
-| StopFailure | See docs | No | Yes |
-| TeammateIdle | See docs | Yes | No |
-| InstructionsLoaded | See docs | No | Yes |
-| ConfigChange | See docs | Yes | Yes |
-| CwdChanged | See docs | No | No |
-| FileChanged | See docs | No | Yes |
-| WorktreeCreate | See docs | Yes | No |
-| WorktreeRemove | See docs | No | No |
-| PreCompact | See docs | Yes | Yes |
-| PostCompact | See docs | No | Yes |
-| Elicitation | See docs | Yes | Yes |
-| ElicitationResult | See docs | Yes | Yes |
-| SessionEnd | See docs | No | Yes |
-
+| Field | Required |
+|-------|----------|
+| `description` | No |
+| `allowed-tools` | No |
+| `model` | No |
+| `argument-hint` | No |
 
 ## Plugin Manifest (plugin.json)
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| name | Yes | Plugin identifier |
-| description | Yes | What the plugin provides |
-| version | No | Semantic version |
-| author | No | Author object with name/email |
-| keywords | No | Discovery tags |
-| repository | No | Source repository URL |
-| license | No | License identifier |
+| Field | Required |
+|-------|----------|
+| `name` | Yes |
+| `$schema` | No |
+| `displayName` | No |
+| `description` | No |
+| `version` | No |
+| `author` | No |
+| `homepage` | No |
+| `repository` | No |
+| `license` | No |
+| `keywords` | No |
+| `metadata` | No |
+| `defaultEnabled` | No |
+| `skills` | No |
+| `commands` | No |
+| `agents` | No |
+| `workflows` | No |
+| `hooks` | No |
+| `mcpServers` | No |
+| `outputStyles` | No |
+| `lspServers` | No |
+| `userConfig` | No |
+| `channels` | No |
+| `dependencies` | No |
+| `experimental` | No |
+
+## Marketplace Manifest (marketplace.json)
+
+| Field | Required |
+|-------|----------|
+| `name` | Yes |
+| `owner` | Yes |
+| `plugins` | Yes |
+| `$schema` | No |
+| `description` | No |
+| `version` | No |
+| `metadata` | No |
+| `allowCrossMarketplaceDependenciesOn` | No |
+| `renames` | No |
+
+## Marketplace Plugin Entry
+
+| Field | Required |
+|-------|----------|
+| `name` | Yes |
+| `source` | Yes |
+| `displayName` | No |
+| `description` | No |
+| `version` | No |
+| `author` | No |
+| `homepage` | No |
+| `repository` | No |
+| `license` | No |
+| `keywords` | No |
+| `metadata` | No |
+| `category` | No |
+| `tags` | No |
+| `strict` | No |
+| `relevance` | No |
+| `defaultEnabled` | No |
+| `skills` | No |
+| `commands` | No |
+| `agents` | No |
+| `hooks` | No |
+| `mcpServers` | No |
+| `lspServers` | No |
+
+## Hook Events
+
+| Event | Can Block | Has Matcher |
+|-------|-----------|-------------|
+| `SessionStart` | No | Yes |
+| `Setup` | No | Yes |
+| `UserPromptSubmit` | Yes | No |
+| `UserPromptExpansion` | Yes | Yes |
+| `PreToolUse` | Yes | Yes |
+| `PermissionRequest` | Yes | Yes |
+| `PermissionDenied` | No | Yes |
+| `PostToolUse` | No | Yes |
+| `PostToolUseFailure` | No | Yes |
+| `PostToolBatch` | Yes | No |
+| `Notification` | No | Yes |
+| `MessageDisplay` | No | No |
+| `SubagentStart` | No | Yes |
+| `SubagentStop` | Yes | Yes |
+| `TaskCreated` | Yes | No |
+| `TaskCompleted` | Yes | No |
+| `Stop` | Yes | No |
+| `StopFailure` | No | Yes |
+| `TeammateIdle` | Yes | No |
+| `InstructionsLoaded` | No | Yes |
+| `ConfigChange` | Yes | Yes |
+| `CwdChanged` | No | No |
+| `DirectoryAdded` | No | Yes |
+| `FileChanged` | No | Yes |
+| `WorktreeCreate` | Yes | No |
+| `WorktreeRemove` | No | No |
+| `PreCompact` | Yes | Yes |
+| `PostCompact` | No | Yes |
+| `Elicitation` | Yes | Yes |
+| `ElicitationResult` | Yes | Yes |
+| `SessionEnd` | No | Yes |
 
 ## Valid Values
 
-- **Models**: sonnet, opus, haiku
-- **Colors**: blue, cyan, green, yellow, magenta, red
-- **Permission modes**: (see docs for current options)
+- **Model aliases**: `sonnet`, `opus`, `haiku`, `fable`
+- **Model IDs**: `claude-opus-5`, `claude-sonnet-5`, `claude-fable-5`, `claude-haiku-4-5-20251001`
+- **Model special**: `inherit`
+- **Agent colors**: `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`
+- **Permission modes**: `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`, `manual`
+- **Hook handler types**: `command`, `http`, `mcp_tool`, `prompt`, `agent`

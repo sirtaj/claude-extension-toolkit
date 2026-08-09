@@ -286,7 +286,9 @@ Invoke via Agent tool: `subagent_type: "code-reviewer"`
 }
 ```
 
-The canonical schema uses `source` (not `path`). The `source` field supports multiple types: relative paths, GitHub refs, URLs, npm, and pip packages. Plugin entries should also include `description` and `version` from the plugin manifest.
+The canonical schema uses `source` (not `path`). `source` is a plain string only
+for relative paths; every remote type is an object — `github`, `url`,
+`git-subdir`, `npm`, and `archive`. See `references/marketplace-schema.md`.
 
 The marketplace itself also requires `owner.name` as a required field.
 
@@ -338,4 +340,104 @@ Agent tool with resume: agentId
 **After (current):**
 ```
 SendMessage({to: "agentId", content: "Continue your work"})
+```
+
+## Model IDs: Claude 4.x → Claude 5
+
+**Before (stale):**
+```yaml
+model: claude-sonnet-4-6
+```
+
+**After (current):**
+```yaml
+model: sonnet            # alias, resolves per provider
+# or pin explicitly:
+model: claude-sonnet-5
+```
+
+Current full IDs: `claude-opus-5`, `claude-sonnet-5`, `claude-fable-5`,
+`claude-haiku-4-5-20251001`. The `fable` alias joined `sonnet`/`opus`/`haiku`.
+
+## Agent Color: magenta → purple
+
+**Before (invalid):**
+```yaml
+color: magenta
+```
+
+**After (current):**
+```yaml
+color: purple
+```
+
+Valid colors: `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`,
+`cyan`.
+
+## Skill Frontmatter: Required name/description → All Optional
+
+**Before (over-constrained):**
+```yaml
+---
+name: my-skill           # was documented as required
+description: ...         # was documented as required
+---
+```
+
+**After (current):**
+```yaml
+---
+description: What it does and when to use it.   # recommended, not required
+---
+```
+
+`name` now only sets the display label for personal and project skills — the
+command name comes from the directory. In a **plugin** skill, `name` still sets
+the last segment of the command.
+
+## TodoWrite → Task Tools
+
+**Before (disabled by default since 2.1.142):**
+```yaml
+allowed-tools: [TodoWrite]
+```
+
+**After (current):**
+```yaml
+allowed-tools: [TaskCreate, TaskGet, TaskList, TaskUpdate]
+```
+
+Set `CLAUDE_CODE_ENABLE_TASKS=0` to restore `TodoWrite`.
+
+## TaskOutput → Read
+
+**Before (deprecated):**
+```
+TaskOutput({task_id: "..."})
+```
+
+**After (current):**
+```
+Read the task's output file path directly.
+```
+
+## Hook Script Paths: Shell Form → Exec Form
+
+Shell form needs quoting for paths with spaces; exec form doesn't.
+
+**Before:**
+```json
+{
+  "type": "command",
+  "command": "node \"${CLAUDE_PLUGIN_ROOT}\"/scripts/format.js --fix"
+}
+```
+
+**After (preferred whenever a path placeholder is involved):**
+```json
+{
+  "type": "command",
+  "command": "node",
+  "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/format.js", "--fix"]
+}
 ```

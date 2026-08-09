@@ -2,24 +2,34 @@
 
 Complete reference for all extension frontmatter fields.
 
+Verified against Claude Code 2.1.226 docs (2026-08-09).
+
 ## Skill Frontmatter
+
+**Every skill field is optional.** Only `description` is recommended, so Claude
+knows when to load the skill. Without one, Claude Code uses the first paragraph
+of the markdown body.
 
 ```yaml
 ---
-name: skill-name                      # Required: identifier
-description: Third-person trigger...  # Required: activation conditions
-allowed-tools:                        # Optional: tool restrictions
+name: skill-name                      # Display label in skill listings
+description: Third-person trigger...  # Recommended: activation conditions
+when_to_use: "trigger phrases..."     # Extra activation context
+allowed-tools:                        # Pre-approved tools for the invoking turn
   - Read
   - Grep
-  - Glob
-model: sonnet                         # Optional: sonnet, opus, haiku
-context: fork                         # Optional: fork to run in subagent context
-agent: my-agent                       # Optional: execute as subagent
-hooks:                                # Optional: skill-scoped hooks
+model: sonnet                         # sonnet, opus, haiku, fable, ID, or inherit
+effort: high                          # low, medium, high, xhigh, max
+context: fork                         # fork to run in a subagent context
+agent: Explore                        # Subagent type to use with context: fork
+background: true                      # With context: fork, run in background
+hooks:                                # Skill-scoped hooks
   PreToolUse: [...]
-argument-hint: "filename to process"  # Optional: argument prompt text
-disable-model-invocation: false       # Optional: require explicit /skill
-user-invocable: true                  # Optional: allow /skill-name syntax
+argument-hint: "[filename] [format]"  # Autocomplete hint
+arguments: [issue, branch]            # Named positional args for $name
+disable-model-invocation: false       # Require explicit /skill
+user-invocable: true                  # Show in the / menu
+paths: ["src/**/*.ts"]                # Only auto-activate for matching files
 ---
 ```
 
@@ -27,22 +37,47 @@ user-invocable: true                  # Optional: allow /skill-name syntax
 
 | Field | Required | Type | Purpose |
 |-------|----------|------|---------|
-| `name` | Yes | string | Skill identifier (used in logs; invoked via Agent tool — Task is a legacy alias) |
-| `description` | Yes | string | Trigger conditions in third person |
-| `allowed-tools` | No | list | Restrict which tools the skill can use |
-| `model` | No | enum | Override model (sonnet, opus, haiku) |
-| `context` | No | string | Set to `fork` to run in forked subagent context |
-| `agent` | No | string | Execute skill as named subagent |
-| `hooks` | No | object | Skill-specific hook definitions |
-| `argument-hint` | No | string | Prompt shown when invoked with `/skill` |
-| `disable-model-invocation` | No | bool | Prevent auto-activation, require `/skill` |
-| `user-invocable` | No | bool | Enable `/skill-name` invocation |
+| `name` | No | string | Display label in listings. Defaults to the directory name. In a **plugin** skill it also sets the last segment of the command (`/my-plugin:name`) |
+| `description` | Recommended | string | What the skill does and when to use it, in third person |
+| `when_to_use` | No | string | Trigger phrases or example requests, appended to `description` |
+| `argument-hint` | No | string | Autocomplete hint, e.g. `[issue-number]` |
+| `arguments` | No | string/list | Named positional arguments for `$name` substitution |
+| `disable-model-invocation` | No | bool | Prevent auto-activation; require `/skill`. Also blocks preloading into subagents |
+| `user-invocable` | No | bool | Set `false` to hide from the `/` menu. Default `true` |
+| `allowed-tools` | No | string/list | Tools pre-approved for the invoking **turn** (grant clears on your next message). Does not restrict anything |
+| `disallowed-tools` | No | string/list | Tools removed from the pool while the skill is active |
+| `model` | No | string | Same values as `/model`, or `inherit`. With `context: fork`, sets the forked subagent's model |
+| `effort` | No | enum | `low`, `medium`, `high`, `xhigh`, `max` |
+| `context` | No | string | `fork` runs the skill in a forked subagent context |
+| `agent` | No | string | Which subagent type to use when `context: fork` is set |
+| `background` | No | bool | Only with `context: fork`. `false` waits for the result in the invoking turn. Default `true` |
+| `hooks` | No | object | Skill-scoped hooks (the only place `once: true` is honored) |
+| `paths` | No | string/list | Globs limiting when the skill auto-activates |
+| `shell` | No | enum | `bash` (default) or `powershell` for `` !`command` `` blocks |
+| `metadata` | No | map | Free-form data for your own tooling; Claude Code ignores it |
+| `license` | No | string | Agent Skills spec field; accepted but not acted on |
+| `compatibility` | No | string | Agent Skills spec field (≤500 chars); accepted but not acted on |
+
+Boolean fields accept `yes`/`no`/`on`/`off`/`1`/`0` in any case as well as
+`true`/`false`.
+
+### Portability outside Claude Code
+
+Skills follow the [Agent Skills](https://agentskills.io) open standard. Only six
+fields are valid outside Claude Code — for claude.ai uploads, the Skills API,
+and `package_skill.py`:
+
+`name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`
+
+Any other field causes a **hard error** on packaging or upload, not a silent
+ignore. Restrict frontmatter to those six if the skill needs to travel.
 
 ### Name Validation
 
 - Maximum 64 characters
 - Lowercase letters, numbers, and hyphens only (`^[a-z0-9-]+$`)
-- Description maximum 1024 characters, no XML tags
+- Combined `description` + `when_to_use` is truncated at 1,536 characters in the
+  skill listing, so put the key use case first
 
 ### Description Best Practices
 
@@ -71,8 +106,27 @@ Variables available in skill content:
 | `$ARGUMENTS` | Full argument string passed to skill |
 | `$ARGUMENTS[N]` | Nth argument (0-indexed) |
 | `$N` | Shorthand for `$ARGUMENTS[N]` (e.g., `$0`, `$1`) |
+| `$name` | Named argument declared in the `arguments` frontmatter list |
 | `${CLAUDE_SESSION_ID}` | Current session identifier |
+| `${CLAUDE_EFFORT}` | Active effort level: low, medium, high, xhigh, max |
 | `${CLAUDE_SKILL_DIR}` | Directory containing the SKILL.md file |
+| `${CLAUDE_PROJECT_DIR}` | Project root (same value hooks receive) |
+
+`${CLAUDE_SKILL_DIR}` and `${CLAUDE_PROJECT_DIR}` are substituted in **both** the
+markdown body and Bash rules in `allowed-tools`. Use the same variable in both
+so a bundled script runs without a permission prompt:
+
+```yaml
+---
+name: render-chart
+description: Render a chart from a CSV file
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/render.sh *)
+---
+
+Run `${CLAUDE_SKILL_DIR}/scripts/render.sh <csv-file>` to render the chart.
+```
+
+Escape a literal `$` before a digit or `ARGUMENTS` with a backslash: `\$1.00`.
 
 ### Dynamic Context Injection
 
@@ -105,24 +159,25 @@ description: |                        # Required: with <example> blocks
   user: "Do X"
   assistant: "I'll launch agent-name"
   </example>
-tools:                                # Optional: allowed tools (default: all)
+tools:                                # Optional: allowed tools (default: inherit)
   - Read
   - Write
   - Bash
 disallowedTools:                      # Optional: explicitly blocked tools
-  - Task
+  - Agent
 model: opus                           # Optional: override model
-color: cyan                           # Optional: output color
+effort: high                           # Optional: low, medium, high, xhigh, max
+color: cyan                           # Optional: display color
 hooks:                                # Optional: agent-scoped hooks
   PostToolUse: [...]
 permissionMode: auto                  # Optional: permission handling
 skills:                               # Optional: preload skills
   - code-review
-maxTurns: 50                           # Optional: max conversation turns
+maxTurns: 50                           # Optional: max agentic turns
 mcpServers:                            # Optional: MCP servers to load
   - server-name
-memory: true                           # Optional: enable agent memory
-background: false                      # Optional: run in background
+memory: project                        # Optional: user, project, or local
+background: false                      # Optional: always run in background
 isolation: worktree                    # Optional: git worktree isolation
 ---
 ```
@@ -131,20 +186,41 @@ isolation: worktree                    # Optional: git worktree isolation
 
 | Field | Required | Type | Purpose |
 |-------|----------|------|---------|
-| `name` | Yes | string | Identifier for Agent tool `subagent_type` |
+| `name` | Yes | string | Identifier for Agent tool `subagent_type`. Lowercase letters and hyphens. **Cannot contain `:`** — that's reserved for plugin-scoped names, and a file with one fails to load |
 | `description` | Yes | string | When to use, with example blocks |
-| `tools` | No | list | Whitelist of allowed tools |
-| `disallowedTools` | No | list | Blacklist of denied tools |
-| `model` | No | enum | Override model selection |
-| `color` | No | enum | blue, cyan, green, yellow, magenta, red |
+| `tools` | No | list | Allowlist. Inherits every tool available to subagents when omitted |
+| `disallowedTools` | No | list | Denylist, applied before `tools` resolves. Accepts `mcp__<server>` patterns |
+| `model` | No | string | `sonnet`, `opus`, `haiku`, `fable`, a full ID (`claude-opus-5`), or `inherit`. Defaults to `inherit` |
+| `effort` | No | enum | `low`, `medium`, `high`, `xhigh`, `max` |
+| `color` | No | enum | red, blue, green, yellow, purple, orange, pink, cyan |
 | `hooks` | No | object | Agent-specific hook definitions |
-| `permissionMode` | No | enum | How to handle permissions: default, acceptEdits, dontAsk, bypassPermissions, plan |
-| `skills` | No | list | Skills to preload into agent |
-| `maxTurns` | No | number | Maximum conversation turns |
-| `mcpServers` | No | list | MCP servers to load |
-| `memory` | No | bool | Enable persistent agent memory |
-| `background` | No | bool | Run agent in background |
-| `isolation` | No | enum | `worktree` for git worktree isolation |
+| `permissionMode` | No | enum | `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`, or `manual` (alias for `default`) |
+| `skills` | No | list | Skills preloaded into the agent's context at startup (full content, not just the description) |
+| `maxTurns` | No | number | Maximum agentic turns before the subagent stops |
+| `mcpServers` | No | list/object | Server names or inline definitions |
+| `memory` | No | enum | Persistent memory scope: `user`, `project`, or `local` |
+| `background` | No | bool | `true` always runs as a background task. Unset lets Claude choose, and it backgrounds by default |
+| `isolation` | No | enum | `worktree` runs the agent in a temporary git worktree, branched from your default branch |
+| `initialPrompt` | No | string | Auto-submitted first user turn when the agent runs as the **main** session agent (`--agent` or the `agent` setting) |
+
+### Tools Available to Subagents
+
+A subagent's tool pool is narrowed by two filters, so the same definition can
+resolve to different tools in the foreground and the background.
+
+**Removed from every subagent**, even when listed in `tools`:
+`AskUserQuestion`, `EndConversation`, `EnterPlanMode`, `ScheduleWakeup`,
+`TaskOutput`, `WaitForMcpServers`, `Workflow`, plus `ExitPlanMode` (unless
+`permissionMode: plan`) and `Agent` at the depth limit.
+
+**Background subagents** (the default) keep every MCP tool but only these
+built-ins: `Read`, `Grep`, `Glob`, `Bash`, `PowerShell`, `Edit`, `Write`,
+`NotebookEdit`, `WebFetch`, `WebSearch`, `TodoWrite`, `Skill`, `ToolSearch`,
+`EnterWorktree`, `ExitWorktree`, `Monitor`, `TaskStop`, `SendMessage`, and
+`Artifact`. Agent-team teammates additionally keep the task and cron tools.
+
+If nothing in `tools` resolves to an available tool, the subagent refuses to
+launch and the Agent tool returns an error naming the unresolved entries.
 
 ### Example Blocks
 
@@ -167,7 +243,7 @@ description: |
 
 ### Plugin Security Restrictions
 
-Agent definitions shipped in plugins do **not** support:
+Agent definitions shipped in plugins **ignore** these fields:
 - `hooks` — cannot override hook configuration
 - `mcpServers` — cannot inject MCP servers
 - `permissionMode` — cannot change permission handling
@@ -176,37 +252,31 @@ These restrictions prevent plugins from escalating privileges.
 
 ## Command Frontmatter
 
-Commands have minimal frontmatter (optional):
+Commands are merged into skills: `.claude/commands/foo.md` and
+`.claude/skills/foo/SKILL.md` both create `/foo`, and a flat command file
+supports **the same frontmatter as a skill**. Prefer `skills/` for new work —
+only a skill directory can carry supporting files.
 
-```yaml
----
-description: What this command does    # Optional: help text
-allowed-tools:                         # Optional: tool restrictions
-  - Read
-  - Write
-model: haiku                           # Optional: override model
-argument-hint: "PR number"             # Optional: argument prompt
----
-```
-
-### Field Details
+The fields that matter most for a flat command file:
 
 | Field | Required | Type | Purpose |
 |-------|----------|------|---------|
-| `description` | No | string | Shown in `/help` |
-| `allowed-tools` | No | list | Tool restrictions |
-| `model` | No | enum | Model override |
-| `argument-hint` | No | string | Prompt for arguments |
-
-Commands are invoked explicitly with `/command-name`, so they don't need trigger descriptions.
-
-**Note:** Commands have been merged into skills — both `.claude/commands/foo.md` and `.claude/skills/foo/SKILL.md` create the `/foo` slash command.
+| `description` | Recommended | string | Shown in the `/` menu |
+| `allowed-tools` | No | string/list | Pre-approved tools for the invoking turn |
+| `model` | No | string | Model override |
+| `argument-hint` | No | string | Autocomplete hint |
+| `disable-model-invocation` | No | bool | Set `true` for a command only you should trigger |
 
 ## Plugin Manifest (plugin.json)
+
+The manifest is **optional**. Without one, components are auto-discovered in
+their default directories and the plugin name comes from the directory name.
+If you include a manifest, `name` is the only required field.
 
 ```json
 {
   "name": "my-plugin",
+  "displayName": "My Plugin",
   "description": "What this plugin provides",
   "version": "1.0.0",
   "author": {
@@ -223,24 +293,50 @@ Commands are invoked explicitly with `/command-name`, so they don't need trigger
 
 | Field | Required | Type | Purpose |
 |-------|----------|------|---------|
-| `name` | Yes | string | Plugin identifier |
-| `description` | Yes | string | What the plugin provides |
-| `version` | No | string | Semantic version |
-| `author` | No | object | `{"name": "...", "email": "..."}` — must be object, not string |
+| `name` | Yes | string | Plugin identifier (kebab-case). Used for component namespacing |
+| `displayName` | No | string | Human-readable name for UI surfaces; may contain spaces |
+| `description` | No | string | What the plugin provides |
+| `version` | No | string | Semantic version. **Setting it pins the plugin** — users only get updates when the string changes |
+| `author` | No | object | `{"name": "...", "email"?, "url"?}` — must be object, not string |
 | `keywords` | No | list | Discovery tags |
 | `repository` | No | string | Source URL |
+| `homepage` | No | string | Documentation URL |
 | `license` | No | string | License identifier |
+| `metadata` | No | object | Free-form; Claude Code never reads it |
+| `defaultEnabled` | No | bool | `false` installs the plugin disabled. Default `true` |
+| `$schema` | No | string | JSON Schema URL for editor autocomplete; ignored at load |
+
+Component path fields — each replaces or supplements the default directory:
+`skills`, `commands`, `agents`, `workflows`, `hooks`, `mcpServers`,
+`outputStyles`, `lspServers`, plus `experimental.themes` and
+`experimental.monitors`. Also available: `userConfig` (values prompted at enable
+time), `channels`, and `dependencies` (other plugins, with optional semver
+constraints).
+
+Unrecognized top-level fields are ignored so one manifest can double as a
+`package.json` or VS Code manifest. `claude plugin validate` reports them as
+warnings; `--strict` turns warnings into errors.
 
 ## Valid Values
 
 ### Models
-- `sonnet` - Default, balanced (full ID: `claude-sonnet-4-6`)
-- `opus` - Most capable, higher cost (full ID: `claude-opus-4-6`)
-- `haiku` - Fastest, lowest cost (full ID: `claude-haiku-4-5-20251001`)
-- `inherit` - Use parent agent's model
+Aliases resolve per provider and update over time; pin with a full model ID.
+
+- `opus` — most capable (Anthropic API: Opus 5, full ID `claude-opus-5`)
+- `sonnet` — balanced (Anthropic API: Sonnet 5, full ID `claude-sonnet-5`)
+- `haiku` — fastest, lowest cost (`claude-haiku-4-5-20251001`)
+- `fable` — Claude Fable 5, for long autonomous sessions (`claude-fable-5`)
+- `inherit` — use the parent/session model
+- `opus[1m]` — Opus with a 1M-token context window
+- `opusplan` — opus during plan mode, sonnet for execution
+
+### Effort Levels
+- `low`, `medium`, `high`, `xhigh`, `max` (available levels depend on the model)
 
 ### Agent Colors
-- `blue`, `cyan`, `green`, `yellow`, `magenta`, `red`
+- `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`
+
+(`magenta` is **not** valid — it was never in the supported set.)
 
 ### Common Tool Lists
 

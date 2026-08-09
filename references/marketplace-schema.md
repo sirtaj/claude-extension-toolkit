@@ -5,6 +5,8 @@ Canonical JSON shape for `.claude-plugin/marketplace.json` and the two supported
 Canonical docs: https://code.claude.com/docs/en/plugin-marketplaces
 Companion: `references/marketplaces.md` (CLI, auth, caching, settings integration)
 
+Verified against Claude Code 2.1.226 docs (2026-08-09).
+
 ## Two Layouts
 
 `marketplace.json` lives at **exactly one level** per tree — never both at the plugin root and an ancestor umbrella root simultaneously.
@@ -64,9 +66,14 @@ Required and optional top-level fields:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `name` | string | yes | Marketplace identifier (kebab-case). Visible in `/plugin install X@<name>`. Must not collide with reserved names (see below). |
-| `owner` | object | yes | `{name: string (required), email?: string}` |
+| `owner` | object | yes | `{name: string (required), email?: string, url?: string}` |
 | `plugins` | array | yes | List of plugin entry objects |
 | `metadata` | object | no | `{description?, version?, pluginRoot?}` |
+| `$schema` | string | no | JSON Schema URL for editor autocomplete; ignored at load |
+| `description` | string | no | Also accepted under `metadata` |
+| `version` | string | no | Also accepted under `metadata` |
+| `allowCrossMarketplaceDependenciesOn` | array | no | Marketplaces this one's plugins may depend on; others are blocked at install |
+| `renames` | object | no | Former plugin `name` → current name, or `null` if removed |
 
 `metadata.pluginRoot` is prepended to relative plugin `source` paths. With `pluginRoot: "./plugins"`, a plugin with `source: "formatter"` resolves to `./plugins/formatter`.
 
@@ -83,17 +90,21 @@ Optional:
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `displayName` | string | Human-readable name for UI; falls back to `name` |
 | `description` | string | Brief plugin description |
 | `version` | string | Semver; **`plugin.json` version silently wins if both set** |
-| `author` | object | `{name: string, email?: string}` (object, not string) |
+| `author` | object | `{name: string, email?: string, url?: string}` (object, not string) |
 | `homepage` | string | Homepage or docs URL |
 | `repository` | string | Source code URL |
 | `license` | string | SPDX identifier (e.g. `MIT`, `Apache-2.0`) |
 | `keywords` | array | Discovery tags (synonym of `tags`) |
+| `metadata` | object | Free-form; Claude Code never reads it |
 | `category` | string | Plugin category |
 | `tags` | array | Searchability tags |
 | `strict` | boolean | Default `true`; see Strict Mode |
-| `commands`, `agents`, `skills`, `hooks`, `mcpServers`, `outputStyles`, `lspServers` | string or object | Override/supplement plugin.json component definitions |
+| `defaultEnabled` | boolean | `false` installs disabled; overrides `plugin.json` |
+| `relevance` | object | Suggestion signals; only for admin-allowlisted marketplaces |
+| `skills`, `commands`, `agents`, `hooks`, `mcpServers`, `lspServers` | string or object | Override/supplement plugin.json component definitions |
 
 Deprecated:
 
@@ -110,8 +121,11 @@ Deprecated:
 | URL | object `{source: "url", url, ref?, sha?}` | `url` (https://, git@, Azure DevOps, CodeCommit) |
 | Git subdir | object `{source: "git-subdir", url, path, ref?, sha?}` | `url`, `path` |
 | npm | object `{source: "npm", package, version?, registry?}` | `package` |
+| Archive | object `{source: "archive", url, sha256?}` | `url` (HTTPS zip; Claude Code 2.1.224+) |
 
 Relative paths resolve against the marketplace root (the directory containing `.claude-plugin/`). `../` is disallowed.
+
+When both `ref` and `sha` are set on a git-based source, `sha` is the effective pin.
 
 ## Reserved Marketplace Names
 
@@ -120,11 +134,22 @@ Do NOT use these names (reserved for official Anthropic marketplaces):
 - `claude-code-marketplace`
 - `claude-code-plugins`
 - `claude-plugins-official`
+- `claude-plugins-community`
+- `claude-community`
 - `anthropic-marketplace`
 - `anthropic-plugins`
 - `agent-skills`
+- `anthropic-agent-skills`
 - `knowledge-work-plugins`
 - `life-sciences`
+- `claude-for-legal`
+- `claude-for-financial-services`
+- `financial-services-plugins`
+- `first-party-plugins`
+- `healthcare`
+
+Impersonating names (`official-claude-plugins`, `anthropic-plugins-v2`, …) are
+blocked too. The check runs on every marketplace load, not only at `add` time.
 
 ## Strict Mode
 

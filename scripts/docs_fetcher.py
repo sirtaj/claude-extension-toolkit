@@ -72,6 +72,18 @@ def needs_sync(manifest: dict, sources: dict) -> bool:
         return True
 
 
+def markdown_url(url: str) -> str:
+    """Return the plain-markdown variant of a docs URL.
+
+    The Claude Code docs site serves clean markdown for any page when the path
+    ends in `.md`. Fetching the HTML page instead yields megabytes of app shell
+    that is useless for schema extraction.
+    """
+    if url.endswith((".md", ".txt", ".json")):
+        return url
+    return url + ".md"
+
+
 def fetch_url(url: str, timeout: int = 30) -> Optional[str]:
     """Fetch content from URL."""
     try:
@@ -134,7 +146,7 @@ def sync_docs(sources: dict) -> bool:
 
     for source in sources.get("sources", []):
         source_id = source["id"]
-        url = source["url"]
+        url = markdown_url(source["url"])
 
         print(f"Fetching {source_id}...")
         content = fetch_url(url, timeout=timeout)
@@ -149,93 +161,110 @@ def sync_docs(sources: dict) -> bool:
     return success
 
 
-def update_schema_definitions():
-    """Update the schema-definitions.md reference file."""
-    manifest = load_manifest()
+def _field_table(schema: dict) -> str:
+    """Render a required/recommended/optional field list as a markdown table."""
+    rows = []
+    for requiredness, key in (
+        ("Yes", "required"),
+        ("Recommended", "recommended"),
+        ("No", "optional"),
+    ):
+        for field in schema.get(key, []):
+            # A field can appear in both `recommended` and `optional`; keep the
+            # stronger signal only.
+            if any(field == existing for existing, _ in rows):
+                continue
+            rows.append((field, requiredness))
 
-    content = """# Schema Definitions
+    if not rows:
+        return "_No fields recorded in the version manifest._\n"
 
-Auto-generated from version manifest. Last updated: {timestamp}
+    table = "| Field | Required |\n|-------|----------|\n"
+    for field, requiredness in rows:
+        table += f"| `{field}` | {requiredness} |\n"
+    return table
 
-## Skill Frontmatter
 
-| Field | Required | Type | Description |
-|-------|----------|------|-------------|
-| name | Yes | string | Skill identifier |
-| description | Yes | string | Third-person trigger description |
-| allowed-tools | No | list | Tool restrictions |
-| model | No | enum | sonnet, opus, haiku |
-| context | No | string | Additional context file |
-| agent | No | string | Execute as subagent |
-| hooks | No | object | Skill-scoped hooks |
-| argument-hint | No | string | Argument prompt |
-| disable-model-invocation | No | bool | Require explicit invocation |
-| user-invocable | No | bool | Allow /skill-name |
-
-## Agent Frontmatter
-
-| Field | Required | Type | Description |
-|-------|----------|------|-------------|
-| name | Yes | string | Agent identifier (used with Agent tool; Task is a legacy alias) |
-| description | Yes | string | When to use, with <example> blocks |
-| tools | No | list | Allowed tools (default: all) |
-| disallowedTools | No | list | Explicitly denied tools |
-| model | No | enum | sonnet, opus, haiku |
-| color | No | enum | blue, cyan, green, yellow, magenta, red |
-| hooks | No | object | Agent-scoped hooks |
-| permissionMode | No | enum | Permission handling mode |
-| skills | No | list | Preloaded skills |
-
-## Hook Events
-
-| Event | When | Can Block | Has Matcher |
-|-------|------|-----------|-------------|
-{events_table}
-
-## Plugin Manifest (plugin.json)
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| name | Yes | Plugin identifier |
-| description | Yes | What the plugin provides |
-| version | No | Semantic version |
-| author | No | Author object with name/email |
-| keywords | No | Discovery tags |
-| repository | No | Source repository URL |
-| license | No | License identifier |
-
-## Valid Values
-
-- **Models**: sonnet, opus, haiku
-- **Colors**: blue, cyan, green, yellow, magenta, red
-- **Permission modes**: (see docs for current options)
-"""
-
-    # Build events table
-    events = manifest.get("schemas", {}).get("hooks", {}).get("events", {})
-    events_table = ""
-
+def _events_table(events) -> str:
+    """Render the hook event table."""
+    table = "| Event | Can Block | Has Matcher |\n|-------|-----------|-------------|\n"
     if isinstance(events, dict):
         for event, details in events.items():
             if isinstance(details, dict):
                 can_block = "Yes" if details.get("can_block") else "No"
                 has_matcher = "Yes" if details.get("has_matcher") else "No"
             else:
-                can_block = "No"
-                has_matcher = "No"
-            events_table += f"| {event} | See docs | {can_block} | {has_matcher} |\n"
+                can_block = has_matcher = "See docs"
+            table += f"| `{event}` | {can_block} | {has_matcher} |\n"
     elif isinstance(events, list):
         for event in events:
-            events_table += f"| {event} | See docs | See docs | See docs |\n"
+            table += f"| `{event}` | See docs | See docs |\n"
+    return table
 
-    content = content.format(
-        timestamp=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        events_table=events_table,
-    )
+
+def _value_list(values) -> str:
+    """Render a list of literal values as inline code, comma separated."""
+    if not values:
+        return "see docs"
+    return ", ".join(f"`{v}`" for v in values)
+
+
+def update_schema_definitions():
+    """Regenerate references/schema-definitions.md from the version manifest.
+
+    Every table here is derived from data/version-manifest.json so the reference
+    can never drift from the manifest that validate_extension.py checks against.
+    """
+    manifest = load_manifest()
+    schemas = manifest.get("schemas", {})
+    hooks = schemas.get("hooks", {})
+
+    sections = [
+        "# Schema Definitions",
+        "",
+        "Auto-generated from `data/version-manifest.json` by "
+        "`scripts/docs_fetcher.py update-schemas`. Do not edit by hand.",
+        "",
+        f"- Generated: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}",
+        f"- Claude Code version: {manifest.get('claude_code_version', 'unknown')}",
+        f"- Last docs sync: {manifest.get('last_docs_sync', 'never')}",
+        "",
+        "## Skill Frontmatter",
+        "",
+        _field_table(schemas.get("skill_frontmatter", {})),
+        "## Agent Frontmatter",
+        "",
+        _field_table(schemas.get("agent_frontmatter", {})),
+        "## Command Frontmatter",
+        "",
+        _field_table(schemas.get("command_frontmatter", {})),
+        "## Plugin Manifest (plugin.json)",
+        "",
+        _field_table(schemas.get("plugin_manifest", {})),
+        "## Marketplace Manifest (marketplace.json)",
+        "",
+        _field_table(schemas.get("marketplace_manifest", {})),
+        "## Marketplace Plugin Entry",
+        "",
+        _field_table(schemas.get("marketplace_plugin_entry", {})),
+        "## Hook Events",
+        "",
+        _events_table(hooks.get("events", {})),
+        "## Valid Values",
+        "",
+        f"- **Model aliases**: {_value_list(schemas.get('model_values', {}).get('short'))}",
+        f"- **Model IDs**: {_value_list(schemas.get('model_values', {}).get('full_ids'))}",
+        f"- **Model special**: {_value_list(schemas.get('model_values', {}).get('special'))}",
+        f"- **Agent colors**: {_value_list(hooks.get('valid_colors'))}",
+        f"- **Permission modes**: {_value_list(schemas.get('permission_modes', {}).get('values'))}",
+        f"- **Hook handler types**: "
+        f"{_value_list(hooks.get('handler_fields', {}).get('type', {}).get('values'))}",
+        "",
+    ]
 
     REFERENCES_DIR.mkdir(parents=True, exist_ok=True)
     schema_file = REFERENCES_DIR / "schema-definitions.md"
-    schema_file.write_text(content)
+    schema_file.write_text("\n".join(sections))
     print(f"Updated {schema_file}")
 
 
