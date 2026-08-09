@@ -1,7 +1,7 @@
 {
   "name": "claude-extension-toolkit",
   "description": "Build, debug, and maintain Claude Code extensions.",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "author": {
     "name": "Sirtaj Singh Kang",
     "email": "sirtaj@sirtaj.net"
