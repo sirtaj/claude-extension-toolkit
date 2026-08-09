@@ -41,16 +41,34 @@ def _load_schema() -> dict:
     }
 
 
-def _get_plugin_source(entry: dict) -> str | None:
-    """Get plugin source from entry, preferring 'source' over legacy 'path'."""
-    return entry.get("source") or entry.get("path")
+def _get_plugin_source(entry: dict):
+    """Get plugin source from entry, preferring 'source' over legacy 'path'.
+
+    Returns a string for relative-path sources and a dict for remote ones
+    (`github`, `url`, `git-subdir`, `npm`, `archive`).
+    """
+    source = entry.get("source")
+    if source is None:
+        source = entry.get("path")
+    return source
 
 
-def _resolve_source_path(marketplace_path: Path, source: str) -> Path | None:
-    """Resolve a source string to a local path, if it's a relative path source."""
-    if source.startswith(("./", "../")) or not any(
-        source.startswith(p) for p in ("github:", "http://", "https://", "npm:", "pip:")
-    ):
+def _source_type(source) -> str:
+    """Classify a plugin source entry.
+
+    Only relative paths are plain strings; every remote source is an object
+    whose `source` key names the type.
+    """
+    if isinstance(source, dict):
+        return source.get("source") or "unknown"
+    if isinstance(source, str):
+        return "relative"
+    return "unknown"
+
+
+def _resolve_source_path(marketplace_path: Path, source) -> Path | None:
+    """Resolve a source to a local path, if it's a relative path source."""
+    if _source_type(source) == "relative":
         return marketplace_path / source
     return None
 
@@ -181,8 +199,12 @@ def validate_marketplace(marketplace_path: Path) -> Tuple[List[str], List[str]]:
                         not (local_path / ".claude-plugin" / "plugin.json").exists()
                         and source != "./"
                     ):
-                        errors.append(
-                            f"Plugin entry {i} source '{source}' missing .claude-plugin/plugin.json"
+                        # The manifest is optional — components auto-discover
+                        # and the name falls back to the directory name.
+                        warnings.append(
+                            f"Plugin entry {i} source '{source}' has no "
+                            ".claude-plugin/plugin.json; components will be "
+                            "auto-discovered"
                         )
 
         # Author shape (HARD ERROR if present and not an object)
@@ -299,17 +321,8 @@ def list_plugins(marketplace_path: Path) -> List[dict]:
         source = _get_plugin_source(entry)
         uses_legacy = "path" in entry and "source" not in entry
 
-        # Determine source type
-        if source and any(
-            source.startswith(p) for p in ("github:", "https://", "http://")
-        ):
-            source_type = "remote"
-        elif source and source.startswith("npm:"):
-            source_type = "npm"
-        elif source and source.startswith("pip:"):
-            source_type = "pip"
-        else:
-            source_type = "local"
+        kind = _source_type(source)
+        source_type = "local" if kind == "relative" else kind
 
         plugin_info = {
             "name": entry.get("name"),

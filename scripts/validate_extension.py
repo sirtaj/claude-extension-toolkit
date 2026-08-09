@@ -43,11 +43,23 @@ EXTENSION_TYPES = {
     "skills": {
         "pattern": "**/SKILL.md",
         "required_frontmatter": _SCHEMAS.get("skill_frontmatter", {}).get(
-            "required", []  # name and description are NOT required per official docs
+            "required",
+            [],  # name and description are NOT required per official docs
         ),
         "optional_frontmatter": _SCHEMAS.get("skill_frontmatter", {}).get(
-            "optional", ["name", "description", "allowed-tools", "model", "context", "agent", "hooks",
-                        "argument-hint", "disable-model-invocation", "user-invocable"]
+            "optional",
+            [
+                "name",
+                "description",
+                "allowed-tools",
+                "model",
+                "context",
+                "agent",
+                "hooks",
+                "argument-hint",
+                "disable-model-invocation",
+                "user-invocable",
+            ],
         ),
     },
     "agents": {
@@ -56,8 +68,16 @@ EXTENSION_TYPES = {
             "required", ["name", "description"]
         ),
         "optional_frontmatter": _SCHEMAS.get("agent_frontmatter", {}).get(
-            "optional", ["tools", "disallowedTools", "model", "color", "hooks",
-                        "permissionMode", "skills"]
+            "optional",
+            [
+                "tools",
+                "disallowedTools",
+                "model",
+                "color",
+                "hooks",
+                "permissionMode",
+                "skills",
+            ],
         ),
     },
     "commands": {
@@ -82,17 +102,43 @@ else:
     VALID_HOOK_EVENTS = list(_HOOKS_EVENTS.keys())
 
 VALID_AGENT_COLORS = _HOOKS_SCHEMA.get(
-    "valid_colors", ["red", "blue", "green", "yellow", "purple", "orange", "pink", "cyan"]
+    "valid_colors",
+    ["red", "blue", "green", "yellow", "purple", "orange", "pink", "cyan"],
 )
-VALID_MODELS = _HOOKS_SCHEMA.get(
-    "valid_models", ["sonnet", "opus", "haiku"]
-)
+VALID_MODELS = _HOOKS_SCHEMA.get("valid_models", ["sonnet", "opus", "haiku", "fable"])
+_MODEL_VALUES = _SCHEMAS.get("model_values", {})
+VALID_MODEL_SPECIALS = _MODEL_VALUES.get("special", ["inherit"])
+VALID_MODEL_MODIFIERS = _MODEL_VALUES.get("modifiers", ["opus[1m]", "opusplan"])
 VALID_HOOK_TYPES = ["command", "http", "mcp_tool", "prompt", "agent"]
+
+
+def _is_valid_model(model: str) -> bool:
+    """A model field accepts an alias, a modifier, `inherit`, or a full ID.
+
+    Full IDs (`claude-opus-5`, gateway-prefixed variants) can't be enumerated,
+    so anything containing a known family name is accepted.
+    """
+    if model in VALID_MODELS or model in VALID_MODEL_SPECIALS:
+        return True
+    if model in VALID_MODEL_MODIFIERS:
+        return True
+    return any(family in model for family in VALID_MODELS)
+
+
+def _model_error(model: str) -> str:
+    """Error message listing what a model field accepts."""
+    return (
+        f"Invalid model '{model}', must be an alias "
+        f"({', '.join(VALID_MODELS)}), a full model ID such as "
+        f"'claude-opus-5', or one of: "
+        f"{', '.join(VALID_MODEL_SPECIALS + VALID_MODEL_MODIFIERS)}"
+    )
 
 
 @dataclass
 class ValidationResult:
     """Result of a single validation check."""
+
     path: str
     extension_type: str
     errors: List[str] = field(default_factory=list)
@@ -196,18 +242,24 @@ def validate_skill(path: Path) -> ValidationResult:
 
     # Check frontmatter exists (recommended but not strictly required)
     if frontmatter is None:
-        result.warnings.append("Missing YAML frontmatter - skill may not be discoverable")
+        result.warnings.append(
+            "Missing YAML frontmatter - skill may not be discoverable"
+        )
         return result
 
     # name and description are recommended but NOT required per official docs
     # name defaults to directory name if not specified
     if "description" not in frontmatter:
-        result.warnings.append("Missing 'description' in frontmatter - skill may not trigger automatically")
+        result.warnings.append(
+            "Missing 'description' in frontmatter - skill may not trigger automatically"
+        )
 
     # Validate description length if present
     desc = frontmatter.get("description", "")
     if isinstance(desc, str) and len(desc) > 1536:
-        result.warnings.append(f"Description is long ({len(desc)} chars), consider shortening")
+        result.warnings.append(
+            f"Description is long ({len(desc)} chars), consider shortening"
+        )
 
     # Check for references directory
     references_dir = path.parent / "references"
@@ -223,8 +275,8 @@ def validate_skill(path: Path) -> ValidationResult:
     # Check for model if specified
     if "model" in frontmatter:
         model = frontmatter["model"]
-        if model not in VALID_MODELS:
-            result.errors.append(f"Invalid model '{model}', must be one of: {VALID_MODELS}")
+        if not _is_valid_model(model):
+            result.errors.append(_model_error(model))
 
     return result
 
@@ -255,18 +307,22 @@ def validate_agent(path: Path) -> ValidationResult:
     if "color" in frontmatter:
         color = frontmatter["color"]
         if color not in VALID_AGENT_COLORS:
-            result.errors.append(f"Invalid color '{color}', must be one of: {VALID_AGENT_COLORS}")
+            result.errors.append(
+                f"Invalid color '{color}', must be one of: {VALID_AGENT_COLORS}"
+            )
 
     # Validate model
     if "model" in frontmatter:
         model = frontmatter["model"]
-        if model not in VALID_MODELS:
-            result.errors.append(f"Invalid model '{model}', must be one of: {VALID_MODELS}")
+        if not _is_valid_model(model):
+            result.errors.append(_model_error(model))
 
     # Check description has examples
     desc = frontmatter.get("description", "")
     if isinstance(desc, str) and "<example>" not in desc:
-        result.warnings.append("Agent description should include <example> blocks for better triggering")
+        result.warnings.append(
+            "Agent description should include <example> blocks for better triggering"
+        )
 
     return result
 
@@ -287,8 +343,8 @@ def validate_command(path: Path) -> ValidationResult:
     if frontmatter:
         if "model" in frontmatter:
             model = frontmatter["model"]
-            if model not in VALID_MODELS:
-                result.errors.append(f"Invalid model '{model}', must be one of: {VALID_MODELS}")
+            if not _is_valid_model(model):
+                result.errors.append(_model_error(model))
 
     # Check body has content
     if len(body.strip()) < 10:
@@ -319,7 +375,9 @@ def validate_plugin(path: Path) -> ValidationResult:
 
     # description is optional but recommended
     if "description" not in manifest:
-        result.warnings.append("Missing 'description' in plugin.json - recommended for discoverability")
+        result.warnings.append(
+            "Missing 'description' in plugin.json - recommended for discoverability"
+        )
 
     # Validate author field type (must be object with "name", not a string)
     if "author" in manifest:
@@ -327,7 +385,7 @@ def validate_plugin(path: Path) -> ValidationResult:
         if isinstance(author, str):
             result.errors.append(
                 f"'author' must be an object with 'name' key, not a string. "
-                f"Use: {{\"name\": \"{author}\"}}"
+                f'Use: {{"name": "{author}"}}'
             )
         elif isinstance(author, dict):
             if "name" not in author:
@@ -385,7 +443,7 @@ def validate_hooks_json(path: Path) -> ValidationResult:
             if any(key in VALID_HOOK_EVENTS for key in data.keys()):
                 result.errors.append(
                     "Plugin hooks.json requires a 'hooks' wrapper. "
-                    "Use format: {\"hooks\": {\"EventName\": [...]}}"
+                    'Use format: {"hooks": {"EventName": [...]}}'
                 )
                 return result
             else:
@@ -414,11 +472,15 @@ def validate_hooks_json(path: Path) -> ValidationResult:
             if "matcher" in handler:
                 # This is a matcher group - validate the nested hooks
                 if "hooks" not in handler:
-                    result.errors.append(f"Matcher group in '{event}' missing 'hooks' array")
+                    result.errors.append(
+                        f"Matcher group in '{event}' missing 'hooks' array"
+                    )
                     continue
                 nested_hooks = handler["hooks"]
                 if not isinstance(nested_hooks, list):
-                    result.errors.append(f"Matcher group 'hooks' in '{event}' must be a list")
+                    result.errors.append(
+                        f"Matcher group 'hooks' in '{event}' must be a list"
+                    )
                     continue
                 for nested in nested_hooks:
                     _validate_single_hook(nested, event, result)
@@ -426,7 +488,9 @@ def validate_hooks_json(path: Path) -> ValidationResult:
                 # This is a handler group without matcher (for events without matchers)
                 nested_hooks = handler["hooks"]
                 if not isinstance(nested_hooks, list):
-                    result.errors.append(f"Handler group 'hooks' in '{event}' must be a list")
+                    result.errors.append(
+                        f"Handler group 'hooks' in '{event}' must be a list"
+                    )
                     continue
                 for nested in nested_hooks:
                     _validate_single_hook(nested, event, result)
@@ -463,7 +527,7 @@ def _validate_single_hook(handler: dict, event: str, result: ValidationResult) -
     # Validate model if specified
     if "model" in handler:
         model = handler["model"]
-        if model not in VALID_MODELS:
+        if not _is_valid_model(model):
             result.warnings.append(f"Unknown model '{model}' in '{event}' hook")
 
 
@@ -499,11 +563,15 @@ def find_extensions(base_dir: Path, ext_type: str) -> List[Path]:
     return extensions
 
 
-def validate_all(base_dir: Path, ext_type: Optional[str] = None) -> List[ValidationResult]:
+def validate_all(
+    base_dir: Path, ext_type: Optional[str] = None
+) -> List[ValidationResult]:
     """Validate all extensions in a directory."""
     results = []
 
-    types_to_check = [ext_type] if ext_type else ["skills", "agents", "commands", "plugins", "hooks"]
+    types_to_check = (
+        [ext_type] if ext_type else ["skills", "agents", "commands", "plugins", "hooks"]
+    )
 
     for t in types_to_check:
         extensions = find_extensions(base_dir, t)
@@ -544,8 +612,10 @@ def print_results(results: List[ValidationResult]) -> int:
     warnings = sum(1 for r in results if r.warnings and not r.errors)
     valid = total - errors - warnings
 
-    print(f"\n{'='*50}")
-    print(f"Validated {total} extensions: {valid} valid, {warnings} warnings, {errors} errors")
+    print(f"\n{'=' * 50}")
+    print(
+        f"Validated {total} extensions: {valid} valid, {warnings} warnings, {errors} errors"
+    )
 
     return 1 if has_errors else 0
 
@@ -553,9 +623,14 @@ def print_results(results: List[ValidationResult]) -> int:
 def main():
     parser = argparse.ArgumentParser(description="Validate Claude Code extensions")
     parser.add_argument("path", nargs="?", help="Path to validate")
-    parser.add_argument("--all", action="store_true", help="Validate all extensions in ~/.claude")
-    parser.add_argument("--type", choices=["skills", "agents", "commands", "plugins", "hooks"],
-                        help="Validate only specific extension type")
+    parser.add_argument(
+        "--all", action="store_true", help="Validate all extensions in ~/.claude"
+    )
+    parser.add_argument(
+        "--type",
+        choices=["skills", "agents", "commands", "plugins", "hooks"],
+        help="Validate only specific extension type",
+    )
     parser.add_argument("--json", action="store_true", help="Output as JSON")
 
     args = parser.parse_args()
