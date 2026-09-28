@@ -548,6 +548,8 @@ def find_extensions(base_dir: Path, ext_type: str) -> List[Path]:
         if commands_dir.exists():
             extensions.extend(commands_dir.glob("*.md"))
     elif ext_type == "plugins":
+        if (base_dir / ".claude-plugin").exists():
+            extensions.append(base_dir)
         plugins_dir = base_dir / "plugins"
         if plugins_dir.exists():
             for item in plugins_dir.iterdir():
@@ -649,6 +651,8 @@ def main():
                 results = [validate_skill(path)]
             elif path.name == "hooks.json":
                 results = [validate_hooks_json(path)]
+            elif path.name == "plugin.json" and path.parent.name == ".claude-plugin":
+                results = [validate_plugin(path.parent.parent)]
             elif path.suffix == ".md":
                 # Try to determine type from parent directory
                 parent = path.parent.name
@@ -658,6 +662,9 @@ def main():
                     results = [validate_command(path)]
                 else:
                     results = [validate_skill(path)]
+            else:
+                print(f"Error: Unsupported file type: {path}", file=sys.stderr)
+                sys.exit(2)
         else:
             results = validate_all(path, args.type)
     else:

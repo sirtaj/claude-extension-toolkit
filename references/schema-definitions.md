@@ -2,7 +2,7 @@
 
 Auto-generated from `data/version-manifest.json` by `scripts/docs_fetcher.py update-schemas`. Do not edit by hand.
 
-- Generated: 2026-09-28T09:40:30.280775Z
+- Generated: 2026-09-28T09:57:58.348510Z
 - Claude Code version: 2.1.283
 - Last docs sync: 2026-09-28T09:35:37.739190Z
 

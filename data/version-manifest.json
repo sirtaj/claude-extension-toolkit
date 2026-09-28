@@ -867,9 +867,9 @@
     },
     {
       "pattern": "decision.*block",
-      "replacement": "permissionDecision: deny",
+      "replacement": "PreToolUse only: hookSpecificOutput.permissionDecision \"deny\" (the old value still maps to deny). Top-level decision: \"block\" is the current format for UserPromptSubmit, UserPromptExpansion, PostToolUse, PostToolUseFailure, PostToolBatch, Stop, SubagentStop, ConfigChange, PreCompact and TaskCreated; leave those as is",
       "since": "2.1.0",
-      "severity": "error"
+      "severity": "warning"
     },
     {
       "pattern": "docs.anthropic.com",
@@ -893,7 +893,7 @@
       "pattern": "PreToolUse top-level decision/reason",
       "replacement": "hookSpecificOutput.permissionDecision",
       "since": "2.1.0",
-      "severity": "error"
+      "severity": "warning"
     },
     {
       "pattern": "Agent resume param",

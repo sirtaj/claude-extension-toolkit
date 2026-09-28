@@ -35,9 +35,15 @@ fi
 exit 0
 ```
 
-## Hook Output: decision → permissionDecision
+## Hook Output: decision → permissionDecision (PreToolUse only)
 
-**Before (deprecated):**
+Only PreToolUse moved to `hookSpecificOutput`. The deprecated values still work
+(`"approve"` maps to `"allow"`, `"block"` to `"deny"`). Top-level
+`decision: "block"` + `reason` is still the current format for UserPromptSubmit,
+UserPromptExpansion, PostToolUse, PostToolUseFailure, PostToolBatch, Stop,
+SubagentStop, ConfigChange, PreCompact and TaskCreated — don't migrate those.
+
+**Before (deprecated, PreToolUse):**
 ```bash
 # Old blocking format
 if dangerous_command; then
@@ -55,7 +61,7 @@ if dangerous_command; then
 fi
 
 # Or with JSON:
-# echo '{"hookSpecificOutput": {"permissionDecision": "deny", "message": "Blocked"}}'
+# echo '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "Blocked"}}'
 # exit 0
 ```
 

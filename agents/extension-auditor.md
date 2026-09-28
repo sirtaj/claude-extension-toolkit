@@ -89,12 +89,20 @@ Severity levels: ERROR (blocks functionality), WARNING (deprecated/suboptimal), 
 | Pattern | Fix |
 |---------|-----|
 | `$TOOL_INPUT`/`$TOOL_OUTPUT` | Parse JSON from stdin |
-| `decision: block` | Exit code 2 |
 | `docs.anthropic.com` | `code.claude.com` |
 | `Task` tool | `Agent` tool |
 | `$ARGUMENTS.0` | `$ARGUMENTS[0]` |
-| Top-level `decision`/`reason` | `hookSpecificOutput.permissionDecision` |
+| PreToolUse top-level `decision`/`reason` | `hookSpecificOutput.permissionDecision` (other events such as Stop and PostToolUse still use top-level `decision: "block"`) |
 | Agent `resume` param | `SendMessage({to: agentId})` |
+| `TodoWrite` | `TaskCreate`/`TaskGet`/`TaskList`/`TaskUpdate` |
+| `TaskOutput` | `Read` on the task's output file path |
+| `claude-sonnet-4-6`, `claude-opus-4-6`/`4-7` | `claude-sonnet-5` / `claude-opus-5-5` (or the bare alias) |
+| Agent `color: magenta` | `purple` |
+| `teammateDefaultModel` setting | Name the model in the spawn prompt |
+| `ANTHROPIC_SMALL_FAST_MODEL` | `ANTHROPIC_DEFAULT_HAIKU_MODEL` |
+| SessionEnd `bypass_permissions_disabled` matcher | Remove (no longer sent) |
+
+`pattern_detector.py` reads the full list from `data/version-manifest.json` (`deprecations`).
 
 ## Token Budgets
 
