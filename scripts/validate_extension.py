@@ -107,6 +107,7 @@ VALID_AGENT_COLORS = _HOOKS_SCHEMA.get(
 )
 VALID_MODELS = _HOOKS_SCHEMA.get("valid_models", ["sonnet", "opus", "haiku", "fable"])
 _MODEL_VALUES = _SCHEMAS.get("model_values", {})
+VALID_MODEL_ALIASES = _MODEL_VALUES.get("short", VALID_MODELS)
 VALID_MODEL_SPECIALS = _MODEL_VALUES.get("special", ["inherit"])
 VALID_MODEL_MODIFIERS = _MODEL_VALUES.get("modifiers", ["opus[1m]", "opusplan"])
 VALID_HOOK_TYPES = ["command", "http", "mcp_tool", "prompt", "agent"]
@@ -115,10 +116,10 @@ VALID_HOOK_TYPES = ["command", "http", "mcp_tool", "prompt", "agent"]
 def _is_valid_model(model: str) -> bool:
     """A model field accepts an alias, a modifier, `inherit`, or a full ID.
 
-    Full IDs (`claude-opus-5`, gateway-prefixed variants) can't be enumerated,
+    Full IDs (`claude-opus-5-5`, gateway-prefixed variants) can't be enumerated,
     so anything containing a known family name is accepted.
     """
-    if model in VALID_MODELS or model in VALID_MODEL_SPECIALS:
+    if model in VALID_MODEL_ALIASES or model in VALID_MODEL_SPECIALS:
         return True
     if model in VALID_MODEL_MODIFIERS:
         return True
@@ -129,8 +130,8 @@ def _model_error(model: str) -> str:
     """Error message listing what a model field accepts."""
     return (
         f"Invalid model '{model}', must be an alias "
-        f"({', '.join(VALID_MODELS)}), a full model ID such as "
-        f"'claude-opus-5', or one of: "
+        f"({', '.join(VALID_MODEL_ALIASES)}), a full model ID such as "
+        f"'claude-opus-5-5', or one of: "
         f"{', '.join(VALID_MODEL_SPECIALS + VALID_MODEL_MODIFIERS)}"
     )
 

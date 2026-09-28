@@ -2,7 +2,7 @@
 
 Storage locations and priority order for all Claude Code extensions.
 
-Verified against Claude Code 2.1.226 docs (2026-08-09).
+Verified against Claude Code 2.1.283 docs (2026-09-28).
 
 ## Location Priority
 
@@ -31,8 +31,9 @@ Claude Code skill of the same name.
 | Output styles | — | — | `<plugin>/output-styles/` |
 | Themes | — | — | `<plugin>/themes/` |
 | Monitors | — | — | `<plugin>/monitors/monitors.json` |
+| Evals | — | — | `<plugin>/evals/` (override with `experimental.evals`) |
 | Executables | — | — | `<plugin>/bin/` (added to the Bash tool's `PATH`) |
-| CLAUDE.md | `~/.claude/CLAUDE.md` | `./CLAUDE.md` | — (a plugin-root CLAUDE.md is **not** loaded) |
+| CLAUDE.md | `~/.claude/CLAUDE.md` | `./CLAUDE.md` | — (a plugin-root CLAUDE.md is **not** loaded; `claude plugin validate` warns) |
 | Settings | `~/.claude/settings.json` | `.claude/settings.json` | `<plugin>/settings.json` (ships defaults; only the `agent` and `subagentStatusLine` keys) |
 | | | | Plugin dev settings: `<plugin>/.claude/settings.local.json` |
 | Hooks | In settings.json `hooks` key | In settings.json | `<plugin>/hooks/hooks.json` |
@@ -40,7 +41,10 @@ Claude Code skill of the same name.
 | LSP Config | — | — | `<plugin>/.lsp.json` |
 
 Everything except `plugin.json` lives at the **plugin root**, not inside
-`.claude-plugin/`.
+`.claude-plugin/`. A plugin with `SKILL.md` at its root, no `skills/`, and no
+`skills` key loads as a single skill. Agent subfolders become part of the agent
+name. `.mcpb`/`.dxt` bundles named in `mcpServers` are extracted into
+`<plugin>/.mcpb-cache/`.
 
 ## Skills-Directory Plugins
 
@@ -60,7 +64,14 @@ their background monitors don't load. Disable one with
 
 ## Plugin Installation
 
-Plugins are installed to: `~/.claude/plugins/<plugin-name>/`
+Plugins are fetched and installed under `~/.claude/plugins/`.
+
+Persistent per-plugin data: `${CLAUDE_PLUGIN_DATA}` = `~/.claude/plugins/data/<id>/`
+(`<id>` is the plugin identifier with anything other than letters, digits, `_`,
+`-` replaced by `-`). It survives updates and is deleted when the plugin is
+uninstalled from the last place it's installed (unless `--keep-data`).
+`${CLAUDE_PLUGIN_ROOT}` points at the installed version and changes on update, so
+don't write state there.
 
 After installation:
 - Skills from plugin become available globally
@@ -137,7 +148,13 @@ one.
 ```bash
 # Load plugin directly without installing
 claude --plugin-dir ./my-plugin
+
+# Load a plugin and a local copy of its dependency together
+claude --plugin-dir ./my-dependency --plugin-dir ./my-plugin
 ```
+
+Passing a parent folder that isn't itself a plugin loads each child folder that
+has a `.claude-plugin/plugin.json` (Claude Code 2.1.265+).
 
 ### Live Change Detection
 

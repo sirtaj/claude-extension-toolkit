@@ -56,6 +56,11 @@ python3 scripts/marketplace_register.py new-plugin \
 - Duplicate plugin names within a marketplace raise `Plugin '<name>' already registered`.
 - The one-level invariant is preserved: standalone writes `marketplace.json` at plugin root; register-into-existing writes nothing new at plugin root.
 
+## Before sharing
+
+- Keep each entry `name` identical to the `name` in that plugin's `plugin.json`: the entry name is the install id (`<entry-name>@<marketplace>`), the manifest name is the skill prefix. A mismatch makes installs by the manifest name fail with `not found in marketplace`.
+- Run `claude plugin validate <marketplace-root>`, then install from it locally (`claude plugin marketplace add <marketplace-root>` + `claude plugin install <plugin>@<marketplace>`). Validation doesn't catch a relative `source` pointing at a missing directory (`Source path does not exist` at install) or an exact reserved name (refused at `marketplace add`).
+
 ## Further references
 
 - Schema: [`../../../references/marketplace-schema.md`](../../../references/marketplace-schema.md)

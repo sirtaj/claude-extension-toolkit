@@ -2,9 +2,9 @@
 
 Auto-generated from `data/version-manifest.json` by `scripts/docs_fetcher.py update-schemas`. Do not edit by hand.
 
-- Generated: 2026-08-09T18:23:45.682280Z
-- Claude Code version: 2.1.226
-- Last docs sync: 2026-08-09T18:23:45.681263Z
+- Generated: 2026-09-28T09:40:30.280775Z
+- Claude Code version: 2.1.283
+- Last docs sync: 2026-09-28T09:35:37.739190Z
 
 ## Skill Frontmatter
 
@@ -51,15 +51,31 @@ Auto-generated from `data/version-manifest.json` by `scripts/docs_fetcher.py upd
 | `background` | No |
 | `isolation` | No |
 | `initialPrompt` | No |
+| `omitClaudeMd` | No |
+| `experimental` | No |
 
 ## Command Frontmatter
 
 | Field | Required |
 |-------|----------|
 | `description` | No |
-| `allowed-tools` | No |
-| `model` | No |
+| `when_to_use` | No |
 | `argument-hint` | No |
+| `arguments` | No |
+| `disable-model-invocation` | No |
+| `user-invocable` | No |
+| `allowed-tools` | No |
+| `disallowed-tools` | No |
+| `model` | No |
+| `effort` | No |
+| `context` | No |
+| `agent` | No |
+| `background` | No |
+| `hooks` | No |
+| `shell` | No |
+| `metadata` | No |
+| `license` | No |
+| `compatibility` | No |
 
 ## Plugin Manifest (plugin.json)
 
@@ -88,6 +104,7 @@ Auto-generated from `data/version-manifest.json` by `scripts/docs_fetcher.py upd
 | `userConfig` | No |
 | `channels` | No |
 | `dependencies` | No |
+| `settings` | No |
 | `experimental` | No |
 
 ## Marketplace Manifest (marketplace.json)
@@ -130,6 +147,8 @@ Auto-generated from `data/version-manifest.json` by `scripts/docs_fetcher.py upd
 | `hooks` | No |
 | `mcpServers` | No |
 | `lspServers` | No |
+| `outputStyles` | No |
+| `dependencies` | No |
 
 ## Hook Events
 
@@ -160,17 +179,19 @@ Auto-generated from `data/version-manifest.json` by `scripts/docs_fetcher.py upd
 | `DirectoryAdded` | No | Yes |
 | `FileChanged` | No | Yes |
 | `WorktreeCreate` | Yes | No |
-| `WorktreeRemove` | No | No |
+| `WorktreeRemove` | Yes | No |
 | `PreCompact` | Yes | Yes |
 | `PostCompact` | No | Yes |
+| `PreModelSwitch` | Yes | Yes |
+| `PostModelSwitch` | No | Yes |
 | `Elicitation` | Yes | Yes |
 | `ElicitationResult` | Yes | Yes |
 | `SessionEnd` | No | Yes |
 
 ## Valid Values
 
-- **Model aliases**: `sonnet`, `opus`, `haiku`, `fable`
-- **Model IDs**: `claude-opus-5`, `claude-sonnet-5`, `claude-fable-5`, `claude-haiku-4-5-20251001`
+- **Model aliases**: `sonnet`, `opus`, `haiku`, `fable`, `best`
+- **Model IDs**: `claude-opus-5-5`, `claude-opus-5`, `claude-sonnet-5`, `claude-fable-5-1`, `claude-fable-5`, `claude-haiku-4-5-20251001`
 - **Model special**: `inherit`
 - **Agent colors**: `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`
 - **Permission modes**: `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`, `manual`

@@ -5,7 +5,7 @@ Canonical JSON shape for `.claude-plugin/marketplace.json` and the two supported
 Canonical docs: https://code.claude.com/docs/en/plugin-marketplaces
 Companion: `references/marketplaces.md` (CLI, auth, caching, settings integration)
 
-Verified against Claude Code 2.1.226 docs (2026-08-09).
+Verified against Claude Code 2.1.283 docs (2026-09-28).
 
 ## Two Layouts
 
@@ -104,13 +104,20 @@ Optional:
 | `strict` | boolean | Default `true`; see Strict Mode |
 | `defaultEnabled` | boolean | `false` installs disabled; overrides `plugin.json` |
 | `relevance` | object | Suggestion signals; only for admin-allowlisted marketplaces |
-| `skills`, `commands`, `agents`, `hooks`, `mcpServers`, `lspServers` | string or object | Override/supplement plugin.json component definitions |
+| `dependencies` | array | Same shape as in `plugin.json`; see Dependencies |
+| `skills`, `commands`, `agents`, `hooks`, `mcpServers`, `lspServers`, `outputStyles` | string or object | Override/supplement plugin.json component definitions (see Strict Mode) |
+
+An entry accepts **every** `plugin.json` field alongside its own fields. The entry's `defaultEnabled` and display fields such as `displayName` override `plugin.json`; `plugin.json`'s `version` overrides the entry's.
 
 Deprecated:
 
 | Field | Replacement | Severity |
 |-------|-------------|----------|
 | `path` | `source` | warning |
+
+### Entry name vs manifest name
+
+The entry `name` is the install id (`<entry-name>@<marketplace>`), what `claude plugin list` shows, and the `enabledPlugins` key. The `plugin.json` `name` is the prefix on the plugin's skills and the name `claude plugin details` takes. If they differ and someone installs by the manifest name: `Plugin "<manifest-name>" not found in marketplace "<marketplace>"`. Keep them the same.
 
 ## Source Types
 
@@ -122,10 +129,22 @@ Deprecated:
 | Git subdir | object `{source: "git-subdir", url, path, ref?, sha?}` | `url`, `path` |
 | npm | object `{source: "npm", package, version?, registry?}` | `package` |
 | Archive | object `{source: "archive", url, sha256?}` | `url` (HTTPS zip; Claude Code 2.1.224+) |
+| Command | object `{source: "command", …}` | A directory produced by running a command on the installing machine (see the official marketplace reference for fields) |
 
-Relative paths resolve against the marketplace root (the directory containing `.claude-plugin/`). `../` is disallowed.
+In `git-subdir`, `url` takes a git URL or an `owner/repo` GitHub shorthand.
+
+Relative paths resolve against the marketplace root (the directory containing `.claude-plugin/`). `..` is disallowed: `claude plugin validate` reports `Path contains "..": <path>`. A path to a missing directory **passes** validate and fails at install with `Source path does not exist: <path>`.
 
 When both `ref` and `sha` are set on a git-based source, `sha` is the effective pin.
+
+## Dependencies
+
+`dependencies` (in `plugin.json` or an entry) lists plugins that must be enabled for this one to work. Each item is `"name"`, `"name@marketplace"`, or `{name, marketplace?, version?}`. Bare names resolve in the declaring plugin's own marketplace.
+
+- `version` is a semver range (`~2.1.0`, `^2.0`, `>=1.4`, `=2.1.0`). Pre-releases match only with an opt-in suffix such as `^2.0.0-0`.
+- Ranges resolve against git tags named `<plugin-name>--v<version>` (create them with `claude plugin tag --push`). Tag the plugin's own repo for `github`/`url`/`git-subdir` sources, the marketplace repo for relative-path sources.
+- For `npm`, `archive`, and `command` sources the range doesn't pick what is fetched; the dependency's `plugin.json` `version` is checked at load (no version → satisfies no constraint). Claude Code never installs a `command`-source dependency itself.
+- Cross-marketplace dependencies install only if the **root** marketplace (the one hosting the plugin being installed) lists the target in `allowCrossMarketplaceDependenciesOn`, or the user already has the dependency enabled at the same scope.
 
 ## Reserved Marketplace Names
 
@@ -148,15 +167,25 @@ Do NOT use these names (reserved for official Anthropic marketplaces):
 - `first-party-plugins`
 - `healthcare`
 
-Impersonating names (`official-claude-plugins`, `anthropic-plugins-v2`, …) are
-blocked too. The check runs on every marketplace load, not only at `add` time.
+Impersonating names (`official-claude-plugins`, `anthropic-plugins-v2`,
+`claude-official`, …) are blocked too, and `claude plugin validate` reports them
+(along with names containing spaces or non-ASCII characters). The exact reserved
+names **pass** validate; `marketplace add` refuses them with `The name '<name>' is
+reserved for official Anthropic marketplaces`. Official and community names are
+accepted only for marketplaces sourced from `github.com/anthropics/`
+repositories. The check runs on every marketplace load, not only at `add` time.
 
 ## Strict Mode
 
-| Value | Behavior |
-|-------|----------|
-| `true` (default) | `plugin.json` is authority; marketplace entry supplements |
-| `false` | Marketplace entry is the entire definition; plugin MUST NOT also declare components in `plugin.json` (conflict → load failure) |
+`strict` decides whether the entry may add components to a plugin that has its own `plugin.json`.
+
+| Case | Behavior |
+|------|----------|
+| No `plugin.json` | Entry **is** the manifest, regardless of `strict`. Entry `hooks` loads only as an inline object (file path/array → `not yet supported in a marketplace entry`) |
+| `plugin.json` + `strict: true` (default) | Manifest loads; entry `commands`, `agents`, `skills`, `outputStyles`, `themes` are appended. Entry `hooks` matchers replace the manifest's matchers for the same event |
+| `plugin.json` + `strict: false` | Entry declaring any of `commands`, `agents`, `skills`, `hooks`, `outputStyles`, `themes` → `Plugin <name> has conflicting manifests`, plugin fails to load |
+
+When an entry whose `source` is the marketplace root lists specific `skills` subdirectories, only those load and the default `skills/` isn't scanned.
 
 Use the default unless you specifically need marketplace-only component definitions.
 
@@ -210,15 +239,17 @@ Use the default unless you specifically need marketplace-only component definiti
 
 - `../` in relative source paths → rejected at validation time. Plugins must be inside the marketplace root.
 - Setting `version` in both `plugin.json` and the marketplace entry → `plugin.json` wins silently.
-- Using a reserved marketplace name → fails at `/plugin marketplace add` time with no prior warning. Check the list above before naming.
+- Using an exact reserved marketplace name → passes `claude plugin validate`, then fails at `marketplace add`. Check the list above before naming.
+- Entry `name` differs from `plugin.json` `name` → installing by the manifest name fails with `not found in marketplace`.
+- Relative `source` pointing at a missing directory → passes validate, fails at install (`Source path does not exist`).
 - URL-distributed marketplace + relative source paths → fails at install (URL distribution only fetches the JSON, not plugin dirs). Use URL distribution only with remote `source` types.
-- `strict: false` + plugin has a component-declaring `plugin.json` → load failure. Leave `strict` at default.
+- `strict: false` + entry declares components while the plugin has a `plugin.json` → `has conflicting manifests` load failure. Leave `strict` at default.
 
 ## Where This Schema Is Enforced
 
 | Facet | Enforced by |
 |-------|-------------|
-| JSON syntax, required fields | `claude plugin validate` (built-in) |
+| JSON syntax, required fields, `..` in relative sources, impersonating/non-ASCII names, unknown fields (warnings), each relative-path plugin's `plugin.json` | `claude plugin validate` (built-in) |
 | Reserved names, path-exists, author object shape, metadata wrapper shape | `scripts/marketplace_manager.py validate` |
 | Schema drift vs toolkit version | `data/version-manifest.json` `schemas.marketplace_manifest` / `marketplace_plugin_entry` |
 

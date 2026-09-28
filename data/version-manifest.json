@@ -1,7 +1,7 @@
 {
-  "manifest_version": "1.4",
-  "claude_code_version": "2.1.226",
-  "last_docs_sync": "2026-08-09T18:23:45.681263Z",
+  "manifest_version": "1.5",
+  "claude_code_version": "2.1.283",
+  "last_docs_sync": "2026-09-28T09:35:37.739190Z",
   "schemas": {
     "skill_frontmatter": {
       "required": [],
@@ -34,13 +34,28 @@
         "name": {
           "max_length": 64,
           "pattern": "^[a-z0-9-]+$",
-          "description": "lowercase letters, numbers, hyphens only"
+          "description": "lowercase letters, numbers, hyphens only",
+          "no_xml_tags": true,
+          "reserved_words": [
+            "anthropic",
+            "claude"
+          ],
+          "reserved_folder_names": [
+            "synced",
+            "anthropic-skills"
+          ],
+          "note": "Folder named 'synced' (any case) is skipped; outside a plugin, a folder or command file named 'anthropic-skills' or starting with 'anthropic-skills:' doesn't load"
         },
         "description": {
           "max_length": 1536,
+          "spec_max_length": 1024,
           "no_xml_tags": true,
-          "note": "Combined description + when_to_use capped at 1536 chars"
-        }
+          "note": "Combined description + when_to_use truncated at 1536 chars in the skill listing (configurable via skillListingMaxDescChars); Agent Skills spec limit is 1024 chars, non-empty. If omitted, Claude Code uses the first non-empty line of the body"
+        },
+        "compatibility": {
+          "max_length": 500
+        },
+        "booleans": "Accept true/false plus yes/no/on/off/1/0 in any case (v2.1.218+)"
       },
       "variables": [
         "$ARGUMENTS",
@@ -50,8 +65,11 @@
         "${CLAUDE_SESSION_ID}",
         "${CLAUDE_EFFORT}",
         "${CLAUDE_SKILL_DIR}",
-        "${CLAUDE_PROJECT_DIR}"
+        "${CLAUDE_PROJECT_DIR}",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "${CLAUDE_PLUGIN_DATA}"
       ],
+      "variables_note": "${CLAUDE_PLUGIN_ROOT} and ${CLAUDE_PLUGIN_DATA} are substituted only in plugin skills. ${CLAUDE_SKILL_DIR}, ${CLAUDE_PROJECT_DIR} and the plugin variables are also substituted in Bash rules in allowed-tools",
       "dynamic_context": "! followed by shell command in backticks",
       "agent_skills_spec_fields": [
         "name",
@@ -82,15 +100,25 @@
         "memory",
         "background",
         "isolation",
-        "initialPrompt"
+        "initialPrompt",
+        "omitClaudeMd",
+        "experimental"
       ],
       "plugin_restrictions": {
         "not_supported": [
           "hooks",
           "mcpServers",
-          "permissionMode"
+          "permissionMode",
+          "initialPrompt"
         ],
-        "reason": "Security: plugin agents cannot override hook/permission/MCP configuration"
+        "reason": "Security: plugin agents cannot override hook/permission/MCP configuration; initialPrompt is also ignored for plugin subagents"
+      },
+      "cli_agents_json": {
+        "ignored": [
+          "color",
+          "experimental"
+        ],
+        "note": "--agents JSON uses 'prompt' for the system prompt and accepts the other frontmatter fields"
       },
       "field_values": {
         "memory": [
@@ -100,6 +128,10 @@
         ],
         "isolation": [
           "worktree"
+        ],
+        "experimental.cacheTtl": [
+          "5m",
+          "1h"
         ],
         "effort": [
           "low",
@@ -112,7 +144,7 @@
       "validation": {
         "name": {
           "pattern": "^[a-z0-9-]+$",
-          "description": "lowercase letters and hyphens; ':' is reserved for plugin-scoped identifiers and prevents the file from loading"
+          "description": "lowercase letters, numbers and hyphens, e.g. code-reviewer or reviewer-v2; a name that starts with '-' or contains ':' (reserved for plugin-scoped identifiers) prevents the file from loading"
         }
       }
     },
@@ -120,11 +152,25 @@
       "required": [],
       "optional": [
         "description",
+        "when_to_use",
+        "argument-hint",
+        "arguments",
+        "disable-model-invocation",
+        "user-invocable",
         "allowed-tools",
+        "disallowed-tools",
         "model",
-        "argument-hint"
+        "effort",
+        "context",
+        "agent",
+        "background",
+        "hooks",
+        "shell",
+        "metadata",
+        "license",
+        "compatibility"
       ],
-      "note": "Commands merged into skills \u2014 both .claude/commands/foo.md and .claude/skills/foo/SKILL.md create /foo"
+      "note": "Commands merged into skills \u2014 both .claude/commands/foo.md and .claude/skills/foo/SKILL.md create /foo. A command file accepts the same frontmatter as a skill except name and paths"
     },
     "plugin_manifest": {
       "required": [
@@ -153,13 +199,34 @@
         "userConfig",
         "channels",
         "dependencies",
+        "settings",
         "experimental"
       ],
       "experimental_keys": [
         "themes",
-        "monitors"
+        "monitors",
+        "evals"
       ],
-      "notes": "The manifest itself is optional; without one, components are auto-discovered and the plugin name comes from the directory name. Unrecognized top-level fields are ignored (warning under `claude plugin validate`, error under --strict).",
+      "notes": "The manifest itself is optional; without one, components are auto-discovered and the plugin name comes from the marketplace entry, or from the directory name under --plugin-dir. `name` must be non-empty with no spaces, `@`, `:`, path separators, control or bidi characters (kebab-case). Unrecognized top-level fields are stripped and the plugin loads (warning under `claude plugin validate`, failure under --strict); an unknown key inside a `userConfig` option, `channels` entry, `lspServers` config, or `monitors` entry is an error and the plugin doesn't load. `homepage` must parse as a URL. `settings` only honors `agent` and `subagentStatusLine`, and a root `settings.json` takes precedence. Top-level `themes`/`monitors` still load with a validate warning; use `experimental.*`.",
+      "component_key_behavior": {
+        "replaces_default": [
+          "commands",
+          "agents",
+          "outputStyles",
+          "workflows",
+          "experimental.themes",
+          "experimental.monitors"
+        ],
+        "adds_to_default": [
+          "skills"
+        ],
+        "merges_with_default": [
+          "hooks",
+          "mcpServers",
+          "lspServers"
+        ]
+      },
+      "path_rules": "Component paths are relative to the plugin root and must start with `./`; they must resolve inside the root and exist. `skills` also accepts \".\" (v2.1.221+); `mcpServers` also accepts an https:// `.mcpb`/`.dxt` bundle URL.",
       "default_component_locations": {
         "skills": "skills/",
         "commands": "commands/",
@@ -171,6 +238,7 @@
         "mcp_servers": ".mcp.json",
         "lsp_servers": ".lsp.json",
         "monitors": "monitors/monitors.json",
+        "evals": "evals/",
         "executables": "bin/",
         "settings": "settings.json"
       }
@@ -219,7 +287,7 @@
         "first-party-plugins",
         "healthcare"
       ],
-      "reserved_name_note": "Names that impersonate official marketplaces (e.g. 'official-claude-plugins', 'anthropic-plugins-v2') are also blocked. Reserved names are re-checked on every marketplace load."
+      "reserved_name_note": "Names that impersonate official marketplaces (e.g. 'official-claude-plugins', 'anthropic-plugins-v2', 'claude-official') are also blocked; `claude plugin validate` reports those, and names with spaces or non-ASCII characters. The exact reserved names pass validate but `marketplace add` refuses them ('The name '<name>' is reserved for official Anthropic marketplaces'). Official and community names are accepted only for marketplaces sourced from github.com/anthropics/ repositories. Reserved names are re-checked on every marketplace load."
     },
     "marketplace_plugin_entry": {
       "required": [
@@ -246,8 +314,11 @@
         "agents",
         "hooks",
         "mcpServers",
-        "lspServers"
+        "lspServers",
+        "outputStyles",
+        "dependencies"
       ],
+      "notes": "An entry accepts every plugin.json field alongside its own. Without a plugin.json the entry is the manifest (entry `hooks` only in inline-object form). With plugin.json and strict true/unset, entry commands/agents/skills/outputStyles/themes are appended and entry hooks replace the manifest's matchers per event; with strict false, an entry declaring any of those or hooks fails with 'Plugin <name> has conflicting manifests'. Entry defaultEnabled and display fields (displayName) override plugin.json; plugin.json version overrides the entry's. Entry name is the install id / enabledPlugins key; plugin.json name is the component namespace — keep them equal.",
       "field_types": {
         "author": {
           "type": "object",
@@ -299,7 +370,8 @@
             "path": "required",
             "ref": "optional",
             "sha": "optional"
-          }
+          },
+          "description": "`url` takes a git URL or an owner/repo GitHub shorthand"
         },
         "npm": {
           "fields": {
@@ -314,6 +386,9 @@
             "sha256": "optional"
           },
           "description": "Zip archive over HTTPS; requires Claude Code 2.1.224+"
+        },
+        "command": {
+          "description": "A directory produced by running a command on the machine where the plugin is installed. Claude Code never auto-installs a `command`-source dependency, and plugin.json `version` doesn't pin it"
         }
       },
       "deprecated_fields": {
@@ -327,7 +402,8 @@
         "marketplace entry version",
         "git commit SHA of the plugin source",
         "archive sha256 pin or downloaded file digest"
-      ]
+      ],
+      "version_resolution_notes": "`version` isn't checked against semver. It doesn't pin a plugin with a `command` source, one from a claude.ai-hosted marketplace, or one loaded in place from a marketplace added as a local directory. Dependency version constraints resolve against git tags named `<plugin-name>--v<version>` (git-backed sources only); for npm/archive/command sources the dependency's plugin.json `version` is checked at load."
     },
     "hooks": {
       "events": {
@@ -338,7 +414,8 @@
             "startup",
             "resume",
             "clear",
-            "compact"
+            "compact",
+            "fork"
           ]
         },
         "Setup": {
@@ -395,8 +472,14 @@
             "idle_prompt",
             "auth_success",
             "elicitation_dialog",
+            "elicitation_url_dialog",
             "elicitation_complete",
-            "elicitation_response"
+            "elicitation_response",
+            "agent_needs_input",
+            "agent_completed",
+            "quota_auto_resume_fired",
+            "quota_auto_resume_stale",
+            "quota_auto_resume_disabled"
           ]
         },
         "MessageDisplay": {
@@ -430,13 +513,16 @@
           "has_matcher": true,
           "matcher_values": [
             "rate_limit",
+            "overloaded",
             "authentication_failed",
             "oauth_org_not_allowed",
+            "account_on_hold",
             "billing_error",
             "invalid_request",
             "model_not_found",
             "server_error",
             "max_output_tokens",
+            "cloud_credential_error",
             "unknown"
           ]
         },
@@ -488,7 +574,7 @@
           "has_matcher": false
         },
         "WorktreeRemove": {
-          "can_block": false,
+          "can_block": true,
           "has_matcher": false
         },
         "PreCompact": {
@@ -506,6 +592,18 @@
             "manual",
             "auto"
           ]
+        },
+        "PreModelSwitch": {
+          "can_block": true,
+          "has_matcher": true,
+          "matcher_values": "canonical_model_name",
+          "since": "2.1.251"
+        },
+        "PostModelSwitch": {
+          "can_block": false,
+          "has_matcher": true,
+          "matcher_values": "canonical_model_name",
+          "since": "2.1.251"
         },
         "Elicitation": {
           "can_block": true,
@@ -525,7 +623,6 @@
             "resume",
             "logout",
             "prompt_input_exit",
-            "bypass_permissions_disabled",
             "other"
           ]
         }
@@ -610,7 +707,8 @@
             "mcp_tool": 600,
             "prompt": 30,
             "agent": 60
-          }
+          },
+          "note": "command/http/mcp_tool default lowered to 30 on UserPromptSubmit, PreModelSwitch, PostModelSwitch and to 10 on MessageDisplay; SessionEnd hooks share a 1.5s budget (raised by per-hook timeout, max 60); not enforced on async: true command hooks"
         },
         "statusMessage": {
           "type": "string"
@@ -626,6 +724,12 @@
             "haiku",
             "fable"
           ]
+        },
+        "continueOnBlock": {
+          "type": "boolean",
+          "used_by": "prompt",
+          "default": false,
+          "description": "On ok: false, feed the reason back to Claude and continue instead of ending the turn (agent hooks always behave as if true)"
         }
       },
       "output_format": "hookSpecificOutput",
@@ -664,12 +768,20 @@
       ],
       "output_limits": {
         "max_output_chars": 10000,
-        "note": "Longer output is written to a file and replaced with a preview"
+        "applies_to": [
+          "additionalContext",
+          "systemMessage",
+          "initialUserMessage",
+          "plain stdout"
+        ],
+        "preview_chars": 2000,
+        "note": "Longer output is written to a file in the session directory and replaced with the path and a preview"
       },
       "exit_codes": {
         "0": "Success; stdout parsed for JSON output fields",
-        "2": "Blocking error; stderr is fed back to Claude",
-        "other": "Non-blocking error; the action proceeds"
+        "2": "Blocking error on events that can block; JSON on stdout is still read but cannot override the block; message is the JSON block reason, else stderr",
+        "other": "Non-blocking error; the action proceeds, unless stdout holds a valid JSON object, which then decides the outcome",
+        "note": "JSON output fields are read on every exit code, not just 0. WorktreeCreate/WorktreeRemove fail on any non-zero exit"
       }
     },
     "permission_modes": {
@@ -683,12 +795,12 @@
         "manual"
       ],
       "descriptions": {
-        "default": "Standard permission prompts",
+        "default": "Manual mode: standard permission prompts (only reads run without asking)",
         "acceptEdits": "Auto-approve file edits, prompt for others",
-        "auto": "Auto mode: a background classifier reviews commands and protected-directory writes",
+        "auto": "Auto mode: a background classifier reviews commands and protected-directory writes. Built-in starting mode for interactive terminal and VS Code sessions as of 2.1.283",
         "dontAsk": "Auto-deny permission prompts; explicitly allowed tools still work",
         "bypassPermissions": "Skip all permission prompts (dangerous)",
-        "plan": "Require plan approval before execution",
+        "plan": "Read-only exploration (plus classifier-approved commands when auto mode is available); edits blocked until a plan is approved",
         "manual": "Alias for `default` (Claude Code 2.1.200+)"
       }
     },
@@ -697,11 +809,14 @@
         "sonnet",
         "opus",
         "haiku",
-        "fable"
+        "fable",
+        "best"
       ],
       "full_ids": [
+        "claude-opus-5-5",
         "claude-opus-5",
         "claude-sonnet-5",
+        "claude-fable-5-1",
         "claude-fable-5",
         "claude-haiku-4-5-20251001"
       ],
@@ -710,9 +825,12 @@
       ],
       "modifiers": [
         "opus[1m]",
-        "opusplan"
+        "sonnet[1m]",
+        "fable[1m]",
+        "opusplan",
+        "opusplan[1m]"
       ],
-      "note": "Alias resolution is provider-dependent; see model-config docs"
+      "note": "Alias resolution is provider-dependent; see model-config docs. On the Anthropic API (2.1.280+) opus -> Opus 5.5, sonnet -> Sonnet 5, fable -> Fable 5.1 (2.1.257+), best -> the fable model where Fable is available, else opus. `default` (the /model and settings value that clears an override) is not a model alias and is not listed for subagent `model`."
     },
     "effort_levels": [
       "low",
@@ -797,7 +915,7 @@
     },
     {
       "pattern": "claude-sonnet-4-6|claude-opus-4-6|claude-opus-4-7",
-      "replacement": "claude-sonnet-5 / claude-opus-5 (or the bare alias)",
+      "replacement": "claude-sonnet-5 / claude-opus-5-5 (or the bare alias)",
       "since": "2.1.219",
       "severity": "warning"
     },
@@ -806,6 +924,24 @@
       "replacement": "purple (agent color; magenta is not a valid value)",
       "since": "2.1.0",
       "severity": "error"
+    },
+    {
+      "pattern": "bypass_permissions_disabled",
+      "replacement": "remove from SessionEnd matchers (Claude Code no longer sends this reason)",
+      "since": "2.1.234",
+      "severity": "warning"
+    },
+    {
+      "pattern": "teammateDefaultModel",
+      "replacement": "name the teammate's model in the spawn prompt (setting removed; leftover values are ignored)",
+      "since": "2.1.234",
+      "severity": "warning"
+    },
+    {
+      "pattern": "ANTHROPIC_SMALL_FAST_MODEL",
+      "replacement": "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+      "since": "unknown",
+      "severity": "warning"
     }
   ],
   "canonical_urls": {

@@ -356,8 +356,17 @@ model: sonnet            # alias, resolves per provider
 model: claude-sonnet-5
 ```
 
-Current full IDs: `claude-opus-5`, `claude-sonnet-5`, `claude-fable-5`,
-`claude-haiku-4-5-20251001`. The `fable` alias joined `sonnet`/`opus`/`haiku`.
+Current full IDs: `claude-opus-5-5`, `claude-opus-5`, `claude-sonnet-5`,
+`claude-fable-5-1`, `claude-fable-5`, `claude-haiku-4-5-20251001`. The `fable`
+alias joined `sonnet`/`opus`/`haiku`, and `best` resolves to the `fable` model
+where Fable is available, otherwise to `opus`.
+
+As of 2.1.280, `opus` resolves to Opus 5.5 (was Opus 5 from 2.1.219) on the
+Anthropic API, Bedrock, Agent Platform, and Claude Platform on AWS; as of
+2.1.257, `fable` resolves to Fable 5.1 (was Fable 5). Pin `claude-opus-5` or
+`claude-fable-5` explicitly to stay on the older version. Opus 5.5 defaults to
+`medium` effort (other effort-capable models default to `high`, Opus 4.7 to
+`xhigh`), so revisit any `effort` you tuned for Opus 5.
 
 ## Agent Color: magenta → purple
 
@@ -409,6 +418,13 @@ allowed-tools: [TaskCreate, TaskGet, TaskList, TaskUpdate]
 
 Set `CLAUDE_CODE_ENABLE_TASKS=0` to restore `TodoWrite`.
 
+As of 2.1.268 neither the `Task*` tools nor `TodoWrite` are provided by default
+on newer models (anything after Opus 4.7 / Sonnet 4.6 / Haiku 4.5, e.g. Opus
+4.8+, Sonnet 5, Fable). Don't rely on them in an agent or skill that may run on
+those models; opt in with `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` or by naming one of the
+tools in `--allowedTools` / `--tools`. A subagent only gets them when the
+session has them.
+
 ## TaskOutput → Read
 
 **Before (deprecated):**
@@ -440,4 +456,27 @@ Shell form needs quoting for paths with spaces; exec form doesn't.
   "command": "node",
   "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/format.js", "--fix"]
 }
+```
+
+## Agent Teams: teammateDefaultModel → Spawn Prompt
+
+**Before (removed in 2.1.234, now ignored):**
+```json
+{ "teammateDefaultModel": "sonnet" }
+```
+
+**After (current):** name the model in the prompt that spawns the teammate
+("spawn a reviewer teammate on Sonnet"), set `model` in the subagent
+definition the teammate is spawned from, or set `CLAUDE_CODE_SUBAGENT_MODEL`.
+
+## ANTHROPIC_SMALL_FAST_MODEL → ANTHROPIC_DEFAULT_HAIKU_MODEL
+
+**Before (deprecated):**
+```bash
+export ANTHROPIC_SMALL_FAST_MODEL=claude-haiku-4-5-20251001
+```
+
+**After (current):**
+```bash
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-haiku-4-5-20251001
 ```

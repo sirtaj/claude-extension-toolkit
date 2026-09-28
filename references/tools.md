@@ -2,7 +2,7 @@
 
 Built-in tools and restriction patterns for Claude Code extensions.
 
-Verified against Claude Code 2.1.226 docs (2026-08-09).
+Verified against Claude Code 2.1.283 docs (2026-09-28).
 Canonical docs: https://code.claude.com/docs/en/tools-reference
 
 Tool names are the exact strings used in permission rules, subagent `tools`
@@ -15,22 +15,25 @@ lists, and hook matchers.
 | `Read` | Read file contents | None |
 | `Write` | Create/overwrite files | Creates/modifies files |
 | `Edit` | Modify file sections | Modifies files |
-| `Glob` | Find files by pattern | None |
-| `Grep` | Search file contents | None |
+| `Glob` | Find files by pattern (see note below) | None |
+| `Grep` | Search file contents, ripgrep syntax (see note below) | None |
 | `Bash` | Execute shell commands | Depends on command |
 | `PowerShell` | Execute PowerShell natively | Depends on command |
 | `WebFetch` | Fetch URL content | None |
 | `WebSearch` | Search the web | None |
 | `Agent` | Launch subagents | (formerly Task, still works as alias) |
 | `SendMessage` | Message a teammate, resumed subagent, or other session | Agent communication |
-| `ListAgents` | List agents reachable via SendMessage | None |
+| `ListAgents` | List agents reachable via SendMessage (2.1.224+, cross-session messaging only) | None |
+| `SubagentHandback` | Deliver a subagent's final report (auto mode, local non-fork subagents; 2.1.271+) | Agent communication |
 | `AskUserQuestion` | Interactive prompts | User interaction |
 | `NotebookEdit` | Edit Jupyter notebooks | Modifies notebooks |
 | `Monitor` | Run a command in the background, feeding output lines back | Runs command |
 | `Artifact` | Publish an HTML/Markdown file as a claude.ai artifact | Publishes externally |
 | `SendUserFile` | Send session files to the user | Sends externally |
 | `PushNotification` | Desktop notification (and phone push via Remote Control) | Notifies |
-| `EndConversation` | End the session (main conversation only) | Ends session |
+| `EndConversation` | End the session (main conversation only; 2.1.213+) | Ends session |
+| `SendFeedback` | Draft a Claude Code feedback report for you to review (2.1.238+) | Queues local draft |
+| `ShareOnboardingGuide` | Upload `ONBOARDING.md` from `/team-onboarding` and return a share link | Publishes externally |
 | `CronCreate` | Create scheduled task | Creates session-scoped cron job |
 | `CronDelete` | Delete scheduled task | Removes cron job |
 | `CronList` | List scheduled tasks | None |
@@ -43,8 +46,8 @@ lists, and hook matchers.
 | `LSP` | Query language server | None |
 | `Skill` | Invoke a skill | Depends on skill |
 | `Workflow` | Run a dynamic workflow orchestrating many subagents | Spawns agents |
-| `ReportFindings` | Report code-review findings as structured data | None |
-| `TaskCreate` | Create a task | Spawns task |
+| `ReportFindings` | Report code-review findings as structured data (2.1.196+) | None |
+| `TaskCreate` | Create a task (model-dependent default; see below) | Spawns task |
 | `TaskGet` | Get task details | None |
 | `TaskList` | List tasks | None |
 | `TaskStop` | Stop a running background task or named agent | Stops task |
@@ -58,9 +61,28 @@ lists, and hook matchers.
 
 | Tool | Status |
 |------|--------|
-| `TodoWrite` | Disabled by default since v2.1.142 in favor of the `Task*` tools |
+| `TodoWrite` | Disabled by default since v2.1.142 in favor of the `Task*` tools; `CLAUDE_CODE_ENABLE_TASKS=0` restores it where task tools are available |
 | `TaskOutput` | Deprecated in favor of `Read` on the task's output file path |
 | `Task` | Renamed to `Agent` in v2.1.63; still accepted as an alias |
+
+**Task-tracking tools availability (v2.1.268+):** `TaskCreate`, `TaskGet`, `TaskList`,
+`TaskUpdate` (and `TodoWrite`) are provided by default only on Claude 3.x,
+Opus 4 through 4.7, Sonnet 4 through 4.6, and Haiku 4.5. On newer models
+(Opus 4.8+, Sonnet 5, Fable) and unrecognized model IDs they are absent unless
+you opt in: `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`, naming one of them in
+`--allowedTools`, or listing them in `--tools`. Background and cloud sessions
+get them on every model. A subagent gets them only when the session has them.
+
+**Glob / Grep absent by default on macOS, Linux, and WSL:** Claude searches
+with `find`/`grep` through `Bash` instead (those calls reach hooks and
+permission rules as `Bash`). The tools come back when named in `--tools` or
+`--allowedTools` at launch (a settings allow rule doesn't count), when `Bash`
+is removed from the session, or for a subagent that lists `Glob`/`Grep` in
+`tools` and leaves out `Bash`. On Windows they're in the default set.
+
+**Always-present:** `EndConversation` can't be removed by deny/ask rules,
+`--disallowedTools`, or `--tools` while any other tool remains, and
+`PreToolUse` hooks don't run for it. Subagents never get it.
 
 ## Common Restriction Patterns
 
@@ -148,6 +170,26 @@ disallowedTools:
 
 Use for: offline-only agents, security-sensitive tasks
 
+### Rule Specifiers
+
+Permission rules, `--allowedTools`/`--disallowedTools`, skill `allowed-tools`,
+and hook `if` conditions all use `ToolName(specifier)`:
+
+| Rule format | Applies to |
+|-------------|-----------|
+| `Bash(npm run *)` | Bash, Monitor |
+| `PowerShell(Get-ChildItem *)` | PowerShell |
+| `Read(~/secrets/**)` | Read, Grep, Glob, LSP |
+| `Edit(/src/**)` | Edit, Write, NotebookEdit |
+| `Skill(deploy *)` | Skill |
+| `Agent(Explore)` | Agent |
+| `WebFetch(domain:example.com)` | WebFetch |
+
+Other tools (e.g. `WebSearch`, `ExitPlanMode`, `ShareOnboardingGuide`) take
+only the bare name. An `Edit(...)` allow also grants read on that path; a
+`Read(...)` deny also blocks Edit and Write there. Hook `matcher` fields use
+bare tool names, not this format.
+
 ### Restricting Spawnable Agents
 
 Limit which agent types can be spawned:
@@ -176,17 +218,21 @@ Used in agent frontmatter `permissionMode`:
 
 | Mode | Behavior |
 |------|----------|
-| `default` | Standard permission checking with prompts |
+| `default` | Manual mode: standard permission checking with prompts (only reads run unprompted) |
 | `manual` | Alias for `default` (2.1.200+) |
 | `acceptEdits` | Auto-accept file edits and common filesystem commands in the working directory |
 | `auto` | A background classifier reviews commands and protected-directory writes |
 | `dontAsk` | Auto-**deny** prompts. Explicitly allowed tools still work |
 | `bypassPermissions` | Skip permission prompts (dangerous) |
-| `plan` | Plan mode: read-only exploration |
+| `plan` | Plan mode: read-only exploration (plus classifier-approved commands when auto mode is available); edits blocked until a plan is approved |
 
 A parent using `bypassPermissions` or `acceptEdits` takes precedence and can't
 be overridden by a subagent. Under `auto`, a subagent's `permissionMode` is
 ignored entirely — the classifier evaluates its calls with the parent's rules.
+Plugin subagents ignore `permissionMode` altogether.
+
+As of v2.1.283, `auto` is the built-in starting mode for interactive terminal
+and VS Code sessions (`-p` and the Agent SDK still start in `default`).
 
 ## Tool Categories
 
@@ -200,7 +246,7 @@ ignored entirely — the classifier evaluates its calls with the parent's rules.
 - Bash, PowerShell, Monitor, Agent, Workflow
 
 **Interactive:**
-- AskUserQuestion, EndConversation
+- AskUserQuestion, EndConversation, SendFeedback
 
 **Planning:**
 - EnterPlanMode, ExitPlanMode
@@ -209,7 +255,7 @@ ignored entirely — the classifier evaluates its calls with the parent's rules.
 - CronCreate, CronDelete, CronList, RemoteTrigger, ScheduleWakeup
 
 **Agent Management:**
-- Agent, SendMessage, ListAgents, TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate
+- Agent, SendMessage, ListAgents, SubagentHandback, TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate
 
 **Worktree:**
 - EnterWorktree, ExitWorktree
@@ -218,7 +264,7 @@ ignored entirely — the classifier evaluates its calls with the parent's rules.
 - ListMcpResourcesTool, ReadMcpResourceTool, WaitForMcpServers
 
 **Output / sharing:**
-- Artifact, SendUserFile, PushNotification, ReportFindings
+- Artifact, SendUserFile, PushNotification, ReportFindings, ShareOnboardingGuide
 
 **Discovery:**
 - ToolSearch, Skill, LSP
